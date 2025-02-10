@@ -19,6 +19,7 @@ output:
   #   4. medium
   #   5. low
   # Either they are sorted alphabetically.
+  sort-results: true
   sort-order:
     - linter
     - severity
@@ -58,10 +59,9 @@ linters:
     - errchkjson
     - errname
     - errorlint
-    - execinquery
     - exhaustive
     - exhaustruct
-    - exportloopref
+    - copyloopvar
     - exptostd
     - fatcontext
     - forbidigo
@@ -268,17 +268,6 @@ linters:
     # - wrapcheck
     # - wsl
     # - zerologlint
-    - deadcode # Deprecated
-    - exhaustivestruct # Deprecated
-    - golint # Deprecated
-    - ifshort # Deprecated
-    - interfacer # Deprecated
-    - maligned # Deprecated
-    - gomnd # Deprecated
-    - nosnakecase # Deprecated
-    - scopelint # Deprecated
-    - structcheck # Deprecated
-    - varcheck # Deprecated
   # Enable presets.
   # https://golangci-lint.run/usage/linters
   # Default: []
