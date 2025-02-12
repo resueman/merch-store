@@ -13,6 +13,7 @@ import (
 	"github.com/resueman/merch-store/pkg/closer"
 	"github.com/resueman/merch-store/pkg/db"
 	"github.com/resueman/merch-store/pkg/db/postgres"
+	"github.com/resueman/merch-store/pkg/db/txmanager"
 )
 
 type serviceProvider struct {
@@ -23,6 +24,7 @@ type serviceProvider struct {
 	closer *closer.Closer
 
 	dbClient     db.Client
+	txManager    db.TxManager
 	repositories *repo.Repositories
 	usecases     *usecase.Usecase
 	handler      *echo.Echo
@@ -66,18 +68,28 @@ func (p *serviceProvider) DbClient(ctx context.Context) db.Client {
 
 	client, err := postgres.NewPostgresClient(ctx, p.Config().Postgres.DSN)
 	if err != nil {
-		log.Fatalf("failed to connect to pg: %v", err)
+		log.Fatalf("failed to connect to postgres: %v", err)
 	}
 
 	err = client.Primary().Ping(ctx)
 	if err != nil {
-		log.Fatalf("failed ping to pg: %v", err)
+		log.Fatalf("failed ping to postgres: %v", err)
 	}
 
 	p.dbClient = client
 	p.closer.Add(p.dbClient.Close)
 
 	return p.dbClient
+}
+
+func (p *serviceProvider) TxManager(ctx context.Context) db.TxManager {
+	if p.txManager == nil {
+		timeout := p.Config().TxManager.TimeoutSec
+		maxRetries := p.Config().TxManager.RetryCount
+		p.txManager = txmanager.NewTxManager(p.DbClient(ctx).Primary(), timeout, maxRetries)
+	}
+
+	return p.txManager
 }
 
 func (p *serviceProvider) Repositories(ctx context.Context) *repo.Repositories {
@@ -90,7 +102,7 @@ func (p *serviceProvider) Repositories(ctx context.Context) *repo.Repositories {
 
 func (p *serviceProvider) Usecases(ctx context.Context) *usecase.Usecase {
 	if p.usecases == nil {
-		p.usecases = usecase.NewUsecase(p.Repositories(ctx))
+		p.usecases = usecase.NewUsecase(p.Repositories(ctx), p.TxManager(ctx))
 	}
 
 	return p.usecases

@@ -17,6 +17,11 @@ func newAuthHandler(e *echo.Echo, userService usecase.User) *authHandler {
 	return h
 }
 
+type authRequest struct {
+	Password string `json:"password" validate:"required"`
+	Username string `json:"username" validate:"required"`
+}
+
 // Аутентификация и получение JWT-токена. При первой аутентификации пользователь создается автоматически.
 // (POST /api/auth).
 func (h *authHandler) auth(c echo.Context) error {

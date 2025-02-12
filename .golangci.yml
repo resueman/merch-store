@@ -193,7 +193,10 @@ linters-settings:
           - github.com/resueman/merch-store
           - github.com/labstack/gommon/log
           - github.com/labstack/echo
+          - github.com/Masterminds/squirrel
+          - github.com/jackc/pgx/v5
   varnamelen:
     ignore-names:
       - wg
       - f
+      - tx

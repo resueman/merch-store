@@ -11,6 +11,7 @@ type Config struct {
 	Postgres   `yaml:"postgres"`
 	JWT        `yaml:"jwt"`
 	Logger     `yaml:"logger"`
+	TxManager  `yaml:"txManager"`
 }
 
 type HTTPServer struct {
@@ -38,6 +39,11 @@ type JWT struct {
 type Logger struct {
 	Level string `yaml:"level" env:"LOG_LEVEL" env-default:"debug"`
 	File  string `yaml:"logFile" env:"LOG_FILE" env-default:"logs/app.log"`
+}
+
+type TxManager struct {
+	TimeoutSec int `yaml:"timeoutSec" env:"TIMEOUT_SEC" env-default:"3"`
+	RetryCount int `yaml:"retryCount" env:"RETRY_COUNT" env-default:"3"`
 }
 
 //nolint:exhaustruct

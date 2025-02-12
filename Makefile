@@ -4,7 +4,7 @@
 LOCAL_BIN:=$(CURDIR)/bin
 
 # Путь к спецификации OpenAPI
-OPENAPI_SPEC_PATH = ./api/openapi/v1/schema.yaml
+OPENAPI_SPEC_PATH = ./api/openapi/$(VERSION)/schema.yaml
 
 # Пути для сгенерированных по openapi компонентов
 COMPONENTS_DIR = ./internal/api
@@ -38,6 +38,10 @@ clean-api:
 
 build:
 	GOOS=linux GOARCH=amd64 go build -o merch_store_linux cmd/store/main.go
+
+coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
 
 help:
 	@echo "Доступные команды:"
