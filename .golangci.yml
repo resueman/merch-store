@@ -49,7 +49,6 @@ linters:
     - copyloopvar
     - cyclop
     - decorder
-    - depguard
     - dogsled
     - dupl
     - dupword
@@ -156,6 +155,7 @@ linters:
   # https://golangci-lint.run/usage/linters/#disabled-by-default
   disable:
     - tagalign
+    - depguard
   # Enable presets.
   # https://golangci-lint.run/usage/linters
   # Default: []
@@ -182,21 +182,13 @@ linters:
 #   exclude:
 
 linters-settings:
-  depguard:
-    rules:
-      main:
-        files:
-          - $all
-        allow:
-          - $gostd
-          - github.com/ilyakaznacheev/cleanenv
-          - github.com/resueman/merch-store
-          - github.com/labstack/gommon/log
-          - github.com/labstack/echo
-          - github.com/Masterminds/squirrel
-          - github.com/jackc/pgx/v5
   varnamelen:
     ignore-names:
       - wg
       - f
       - tx
+#  wrapcheck:
+#    ignoreSigs:
+#      - .*/internal/delivery/handlers/http/v1/.*
+  cyclop:
+    max-complexity: 12

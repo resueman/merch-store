@@ -45,6 +45,8 @@ func getReturnHTTPCodeAndMessage(err error) (int, string) {
 		return http.StatusBadRequest, ErrTokenExpiredMessage
 	case apperrors.ErrGenerateToken:
 		return http.StatusInternalServerError, ErrGenerateTokenMessage
+	case apperrors.ErrInvalidClaims:
+		return http.StatusBadRequest, ErrUnknownMessage
 	}
 
 	return http.StatusInternalServerError, ErrUnknownMessage

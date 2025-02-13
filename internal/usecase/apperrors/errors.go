@@ -14,4 +14,5 @@ var (
 	ErrInvalidToken    = errors.New("invalid token")
 	ErrTokenExpired    = errors.New("token expired")
 	ErrGenerateToken   = errors.New("failed to generate token")
+	ErrInvalidClaims   = errors.New("invalid claims")
 )

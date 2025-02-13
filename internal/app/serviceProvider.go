@@ -104,7 +104,7 @@ func (p *serviceProvider) Repositories(ctx context.Context) *repo.Repositories {
 	return p.repositories
 }
 
-func (p *serviceProvider) PasswordManager(ctx context.Context) *password.BcryptManager {
+func (p *serviceProvider) PasswordManager() *password.BcryptManager {
 	if p.passwordManager == nil {
 		salt := "1234567890" // надо генерировать для каждого пользователя, но пока так, переделаю, если успею
 		p.passwordManager = password.NewPasswordManager(salt)
@@ -115,7 +115,7 @@ func (p *serviceProvider) PasswordManager(ctx context.Context) *password.BcryptM
 
 func (p *serviceProvider) Usecases(ctx context.Context) *usecase.Usecase {
 	if p.usecases == nil {
-		p.usecases = usecase.NewUsecase(p.Repositories(ctx), p.TxManager(ctx), p.PasswordManager(ctx))
+		p.usecases = usecase.NewUsecase(p.Repositories(ctx), p.TxManager(ctx), p.PasswordManager())
 	}
 
 	return p.usecases
