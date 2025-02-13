@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
 	"github.com/resueman/merch-store/pkg/db"
 	"github.com/resueman/merch-store/pkg/db/postgres"
@@ -48,7 +49,7 @@ func (m *TxManager) Serializable(ctx context.Context, mode db.Mode, f func(ctx c
 	}
 }
 
-func (m *TxManager) WithRetry(f func() error, shouldRetry func(error) bool) error {
+func (m *TxManager) WithRetry(f func() error) error {
 	errChan := make(chan error, 1)
 
 	for range m.maxRetries {
@@ -62,9 +63,13 @@ func (m *TxManager) WithRetry(f func() error, shouldRetry func(error) bool) erro
 				return nil
 			}
 
-			if !shouldRetry(err) {
-				return err
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && (pgErr.Code == "40001" ||
+				pgErr.Code == "40P01" || pgErr.Code == "55P03") {
+				continue
 			}
+
+			return err
 		case <-time.After(time.Duration(m.timeout) * time.Second):
 			continue
 		}

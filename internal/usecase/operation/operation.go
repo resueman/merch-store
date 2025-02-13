@@ -39,12 +39,12 @@ func (u *operationUsecase) BuyItem(ctx context.Context, itemName string) error {
 		return apperrors.ErrInvalidClaims
 	}
 
-	customerAccountID, err := u.accountRepo.GetIDByUserID(ctx, claims.UserID) // Read!!!!!!!!!!!
+	customerAccountID, err := u.accountRepo.GetIDByUserID(ctx, claims.UserID)
 	if err != nil {
 		return err
 	}
 
-	product, err := u.productRepo.GetProductByName(ctx, itemName) // Read!!!!!!!!!!
+	product, err := u.productRepo.GetProductByName(ctx, itemName)
 	if err != nil {
 		if errors.Is(err, repoerrors.ErrNotFound) {
 			return apperrors.ErrProductNotFound
@@ -79,12 +79,12 @@ func (u *operationUsecase) BuyItem(ctx context.Context, itemName string) error {
 		return nil
 	}
 
-	shouldRetry := func(err error) bool {
+	/*shouldRetry := func(err error) bool {
 		return !errors.Is(err, repoerrors.ErrNotEnoughBalance)
-	}
+	}*/
 
 	serializable := u.txManager.Serializable(ctx, db.Write, transaction)
-	if err = u.txManager.WithRetry(serializable, shouldRetry); err != nil {
+	if err = u.txManager.WithRetry(serializable); err != nil {
 		return err
 	}
 
@@ -151,12 +151,12 @@ func (u *operationUsecase) SendCoin(ctx context.Context, receiverUsername string
 		return nil
 	}
 
-	shouldRetry := func(err error) bool {
+	/*shouldRetry := func(err error) bool {
 		return !errors.Is(err, repoerrors.ErrNotEnoughBalance)
-	}
+	}*/
 
 	serializable := u.txManager.Serializable(ctx, db.Write, transaction)
-	if err = u.txManager.WithRetry(serializable, shouldRetry); err != nil {
+	if err = u.txManager.WithRetry(serializable); err != nil {
 		return err
 	}
 

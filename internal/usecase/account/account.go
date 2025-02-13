@@ -74,14 +74,14 @@ func (u *accountUsecase) GetInfo(ctx context.Context) (*model.AccountInfo, error
 		return nil
 	}
 
-	shouldRetry := func(_ error) bool {
+	/*shouldRetry := func(_ error) bool {
 		return true
-	}
+	}*/
 
 	// пожертвуем тем, что баланс может не соответствовать истории операций, если
 	// между его запросом и получением истории операции кто-то выполнит покупку или перевод
 	serializable := u.txManager.ReadCommitted(ctx, db.Read, transaction)
-	if err = u.txManager.WithRetry(serializable, shouldRetry); err != nil {
+	if err = u.txManager.WithRetry(serializable); err != nil {
 		return nil, err
 	}
 
