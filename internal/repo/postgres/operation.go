@@ -101,9 +101,11 @@ func (r *OperationRepo) GetOutgoingTransfers(ctx context.Context, accountID int)
 	primary := r.db.Primary()
 	builder := primary.QueryBuilder()
 
-	queryRaw, args, err := builder.Select("amount", "recipient_account_id").
+	queryRaw, args, err := builder.Select("amount", "users.username as recipient_username").
 		From("transfer_operations").
-		Where(sq.Eq{"sender_account_id": accountID}).
+		Join("accounts ON transfer_operations.recipient_account_id = accounts.id").
+		Join("users ON accounts.id = users.id").
+		Where(sq.Eq{"transfer_operations.sender_account_id": accountID}).
 		ToSql()
 
 	if err != nil {
@@ -121,7 +123,7 @@ func (r *OperationRepo) GetOutgoingTransfers(ctx context.Context, accountID int)
 	sentOps := []entity.Transfer{}
 
 	for rows.Next() {
-		if err = rows.Scan(&sentOp); err != nil {
+		if err = rows.Scan(&sentOp.Amount, &sentOp.RecipientUsername); err != nil {
 			return nil, err
 		}
 
@@ -135,9 +137,11 @@ func (r *OperationRepo) GetIncomingTransfers(ctx context.Context, accountID int)
 	primary := r.db.Primary()
 	builder := primary.QueryBuilder()
 
-	queryRaw, args, err := builder.Select("amount", "sender_account_id").
+	queryRaw, args, err := builder.Select("amount", "users.username as sender_username").
 		From("transfer_operations").
-		Where(sq.Eq{"recipient_account_id": accountID}).
+		Join("accounts ON transfer_operations.sender_account_id = accounts.id").
+		Join("users ON accounts.id = users.id").
+		Where(sq.Eq{"transfer_operations.recipient_account_id": accountID}).
 		ToSql()
 
 	if err != nil {
@@ -155,7 +159,7 @@ func (r *OperationRepo) GetIncomingTransfers(ctx context.Context, accountID int)
 	receivedOps := []entity.Transfer{}
 
 	for rows.Next() {
-		if err = rows.Scan(&receivedOp); err != nil {
+		if err = rows.Scan(&receivedOp.Amount, &receivedOp.SenderUsername); err != nil {
 			return nil, err
 		}
 
