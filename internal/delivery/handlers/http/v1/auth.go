@@ -1,44 +1,62 @@
+//nolint:wrapcheck
 package v1
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/labstack/echo"
+	dto "github.com/resueman/merch-store/internal/api/v1"
+	"github.com/resueman/merch-store/internal/delivery/handlers/http/v1/response"
+	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/usecase"
 )
 
 type authHandler struct {
-	userService usecase.User
+	authService usecase.Auth
 }
 
-func newAuthHandler(e *echo.Echo, userService usecase.User) *authHandler {
-	h := &authHandler{userService: userService}
+func newAuthHandler(e *echo.Echo, authService usecase.Auth) *authHandler {
+	h := &authHandler{authService: authService}
 
 	e.POST("/auth", h.auth)
 
 	return h
 }
 
-type authRequest struct {
-	Password string `json:"password" validate:"required"`
-	Username string `json:"username" validate:"required"`
+func (h *authHandler) validateAuthRequest(input *dto.AuthRequest) string {
+	var errMsg strings.Builder
+	if input.Username == "" {
+		errMsg.WriteString("username is required;")
+	}
+
+	if input.Password == "" {
+		errMsg.WriteString("password is required;")
+	}
+
+	return errMsg.String()
 }
 
-// Аутентификация и получение JWT-токена. При первой аутентификации пользователь создается автоматически.
-// (POST /api/auth).
-func (h *authHandler) auth(c echo.Context) error {
-	// получаем username и password из тела запроса
-	// валидация, что оба параметра присутствуют, иначе 400
+// (POST /api/auth): аутентификация и получение JWT-токена.
+// При первой аутентификации пользователь создается автоматически.
+func (h *authHandler) auth(ctx echo.Context) error {
+	var input dto.AuthRequest
+	if err := ctx.Bind(&input); err != nil {
+		return response.SendHandlerError(ctx, http.StatusBadRequest, "invalid request body")
+	}
 
-	// проверяем, существует ли пользователь с таким username
-	// если нет, то делаем sign up и выдаем токен
+	if errMsg := h.validateAuthRequest(&input); errMsg != "" {
+		return response.SendHandlerError(ctx, http.StatusBadRequest, errMsg)
+	}
 
-	// если пользователь существует, то проверяем password
-	// если password неверный, то возвращаем 401
-	// если password верный, то выдаем JWT-токен
+	authInput := model.AuthRequestInput{Username: input.Username, Password: input.Password}
 
-	// 200 -- AuthResponse с JWT-токеном
-	// 400 -- неверные данные, нет username или password
-	// 401 -- предполагаю, что неверный пароль
-	// 500 -- внутренняя ошибка сервера, например проблемы с БД, этот ответ как раз и будет снижать SLI успешности
+	token, err := h.authService.GenerateToken(ctx.Request().Context(), authInput)
+	if err != nil {
+		return response.SendUsecaseError(ctx, err)
+	}
 
-	return nil
+	dto := dto.AuthResponse{Token: &token}
+
+	return response.SendOk(ctx, dto)
 }

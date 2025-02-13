@@ -6,10 +6,10 @@ import (
 	"github.com/resueman/merch-store/internal/usecase"
 )
 
-func NewRouter(handler *echo.Echo, services *usecase.Usecase) {
+func NewRouter(handler *echo.Echo, services *usecase.Usecase, m *middleware.AuthMiddleware) {
 	handler.Use(middleware.LoggerMiddleware)
 
-	newAuthHandler(handler, services.User)
-	newOperationHandler(handler, services.Operation, middleware.AuthMiddleware)
-	newAccountHandler(handler, services.Account, middleware.AuthMiddleware)
+	newAuthHandler(handler, services.Auth)
+	newOperationHandler(handler, services.Operation, m.AuthMiddleware)
+	newAccountHandler(handler, services.Account, m.AuthMiddleware)
 }

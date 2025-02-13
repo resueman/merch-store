@@ -1,13 +1,15 @@
+//nolint:wrapcheck
 package v1
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo"
+	dto "github.com/resueman/merch-store/internal/api/v1"
+	"github.com/resueman/merch-store/internal/delivery/handlers/http/v1/response"
 	"github.com/resueman/merch-store/internal/usecase"
 )
-
-// 1. сделать валидацию с возвратом кастомных сообщений.
 
 type operationHandler struct {
 	operationUsecase usecase.Operation
@@ -22,53 +24,48 @@ func newOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.Midd
 	return h
 }
 
-type buyItemRequest struct {
-	Item string `param:"item" validate:"required"`
-}
-
 // (GET /api/buy/{item}): купить предмет за монеты.
-func (h *operationHandler) buyItem(ctx echo.Context) error { // GetApiBuyItem(ctx echo.Context, item string) error
+func (h *operationHandler) buyItem(ctx echo.Context) error {
 	item := ctx.Param("item")
 	if item == "" {
-		return sendHandlerErrorResponse(ctx, http.StatusBadRequest, "item name is required") // можно через bind + validate
+		return response.SendHandlerError(ctx, http.StatusBadRequest, "item name is required")
 	}
-
-	/* либо
-	var input buyItemRequest
-	if err := ctx.Bind(&input); err != nil {
-		return h.sendHandlerErrorResponse(ctx, http.StatusBadRequest, err.Error())
-	}
-	if err := h.validate.Struct(input); err != nil {
-		return h.sendHandlerErrorResponse(ctx, http.StatusBadRequest, err.Error())
-	}*/
 
 	if err := h.operationUsecase.BuyItem(ctx.Request().Context(), item); err != nil {
-		return sendUsecaseErrorResponse(ctx, err)
+		return response.SendUsecaseError(ctx, err)
 	}
 
-	return sendNoContentResponse(ctx)
+	return response.SendNoContent(ctx)
 }
 
-type sendCoinRequest struct {
-	Amount int    `json:"amount" validate:"required"`
-	ToUser string `json:"toUser" validate:"required"`
+func (h *operationHandler) validateSendCoinRequest(input *dto.SendCoinRequest) string {
+	var errMsg strings.Builder
+	if input.Amount <= 0 {
+		errMsg.WriteString("amount must be positive;")
+	}
+
+	if input.ToUser == "" {
+		errMsg.WriteString("toUser is required;")
+	}
+
+	return errMsg.String()
 }
 
 // (POST /api/sendCoin): отправить монеты другому пользователю.
 func (h *operationHandler) sendCoin(ctx echo.Context) error {
-	var input sendCoinRequest
-	if err := ctx.Bind(&input); err != nil {
-		return sendHandlerErrorResponse(ctx, http.StatusBadRequest, err.Error())
+	var input dto.SendCoinRequest
+	if err := ctx.Bind(input); err != nil {
+		return response.SendHandlerError(ctx, http.StatusBadRequest, err.Error())
 	}
 
-	/*if err := h.validate.Struct(input); err != nil {
-		return h.sendHandlerErrorResponse(ctx, http.StatusBadRequest, err.Error())
-	}*/
+	if errMsg := h.validateSendCoinRequest(&input); errMsg != "" {
+		return response.SendHandlerError(ctx, http.StatusBadRequest, errMsg)
+	}
 
 	err := h.operationUsecase.SendCoin(ctx.Request().Context(), input.ToUser, input.Amount)
 	if err != nil {
-		return sendUsecaseErrorResponse(ctx, err)
+		return response.SendUsecaseError(ctx, err)
 	}
 
-	return sendNoContentResponse(ctx)
+	return response.SendNoContent(ctx)
 }

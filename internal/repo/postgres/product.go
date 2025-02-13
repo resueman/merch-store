@@ -35,7 +35,7 @@ func (r *ProductRepo) GetProductByName(ctx context.Context, name string) (*entit
 	query := db.Query{Name: "GetProductByName", QueryRaw: queryRaw}
 	product := entity.Product{}
 
-	if err = primary.QueryRow(ctx, query, args...).Scan(&product); err != nil {
+	if err = primary.QueryRow(ctx, query, args...).Scan(&product.ID, &product.Name, &product.Price); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, repoerrors.ErrNotFound
 		}

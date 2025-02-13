@@ -97,8 +97,7 @@ func (r *OperationRepo) ExecTransferOperation(ctx context.Context, input entity.
 	return nil
 }
 
-// +
-func (r *OperationRepo) GetOutgoingTransfers(ctx context.Context, accountID int) ([]entity.OutgoingTransfer, error) {
+func (r *OperationRepo) GetOutgoingTransfers(ctx context.Context, accountID int) ([]entity.Transfer, error) {
 	primary := r.db.Primary()
 	builder := primary.QueryBuilder()
 
@@ -118,8 +117,8 @@ func (r *OperationRepo) GetOutgoingTransfers(ctx context.Context, accountID int)
 		return nil, err
 	}
 
-	sentOp := entity.OutgoingTransfer{}
-	sentOps := []entity.OutgoingTransfer{}
+	sentOp := entity.Transfer{}
+	sentOps := []entity.Transfer{}
 
 	for rows.Next() {
 		if err = rows.Scan(&sentOp); err != nil {
@@ -132,8 +131,7 @@ func (r *OperationRepo) GetOutgoingTransfers(ctx context.Context, accountID int)
 	return sentOps, nil
 }
 
-// +
-func (r *OperationRepo) GetIncomingTransfers(ctx context.Context, accountID int) ([]entity.IncomingTransfer, error) {
+func (r *OperationRepo) GetIncomingTransfers(ctx context.Context, accountID int) ([]entity.Transfer, error) {
 	primary := r.db.Primary()
 	builder := primary.QueryBuilder()
 
@@ -153,8 +151,8 @@ func (r *OperationRepo) GetIncomingTransfers(ctx context.Context, accountID int)
 		return nil, err
 	}
 
-	receivedOp := entity.IncomingTransfer{}
-	receivedOps := []entity.IncomingTransfer{}
+	receivedOp := entity.Transfer{}
+	receivedOps := []entity.Transfer{}
 
 	for rows.Next() {
 		if err = rows.Scan(&receivedOp); err != nil {

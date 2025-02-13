@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/resueman/merch-store/internal/delivery/ctxkey"
 	"github.com/resueman/merch-store/internal/entity"
+	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/repo"
 	"github.com/resueman/merch-store/internal/repo/repoerrors"
 	"github.com/resueman/merch-store/internal/usecase/apperrors"
@@ -32,7 +34,7 @@ func NewOperationUsecase(account repo.Account, operation repo.Operation, product
 // 2. Покупатель существует (уже проверено в middleware?)
 // 3. Кол-во монет достаточно для покупки товара (проверяется в бд, надо вернуть соответствующую ошибку)
 func (u *operationUsecase) BuyItem(ctx context.Context, itemName string) error {
-	userID := ctx.Value("userID").(int)
+	userID := ctx.Value(ctxkey.ClaimsKey).(model.Claims).UserID
 
 	customerAccountID, err := u.accountRepo.GetIDByUserID(ctx, userID)
 	if err != nil {
@@ -101,7 +103,7 @@ func (u *operationUsecase) SendCoin(ctx context.Context, receiverUsername string
 		return apperrors.ErrInvalidAmount
 	}
 
-	userID := ctx.Value("userID").(int)
+	userID := ctx.Value(ctxkey.ClaimsKey).(model.Claims).UserID
 
 	senderAccountID, err := u.accountRepo.GetIDByUserID(ctx, userID)
 	if err != nil {

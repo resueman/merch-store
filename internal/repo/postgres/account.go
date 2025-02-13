@@ -19,7 +19,6 @@ func NewAccountRepo(db db.Client) *AccountRepo {
 	return &AccountRepo{db: db}
 }
 
-// +
 func (r *AccountRepo) GetIDByUserID(ctx context.Context, userID int) (int, error) {
 	primary := r.db.Primary()
 	builder := primary.QueryBuilder()
@@ -47,7 +46,6 @@ func (r *AccountRepo) GetIDByUserID(ctx context.Context, userID int) (int, error
 	return accountID, nil
 }
 
-// +
 func (r *AccountRepo) GetIDByUsername(ctx context.Context, username string) (int, error) {
 	primary := r.db.Primary()
 	builder := primary.QueryBuilder()
@@ -76,7 +74,6 @@ func (r *AccountRepo) GetIDByUsername(ctx context.Context, username string) (int
 	return accountID, nil
 }
 
-// +
 func (r *AccountRepo) GetBalanceByAccountID(ctx context.Context, accountID int) (int, error) {
 	primary := r.db.Primary()
 	builder := primary.QueryBuilder()
@@ -100,8 +97,7 @@ func (r *AccountRepo) GetBalanceByAccountID(ctx context.Context, accountID int) 
 	return balance, nil
 }
 
-// +
-func (r *AccountRepo) GetPurchasesByAccountID(ctx context.Context, accountID int) ([]entity.Inventory, error) {
+func (r *AccountRepo) GetPurchasesByAccountID(ctx context.Context, accountID int) ([]entity.Purchase, error) {
 	primary := r.db.Primary()
 	builder := primary.QueryBuilder()
 
@@ -124,8 +120,8 @@ func (r *AccountRepo) GetPurchasesByAccountID(ctx context.Context, accountID int
 		return nil, err
 	}
 
-	inventory := entity.Inventory{}
-	inventories := []entity.Inventory{}
+	inventory := entity.Purchase{}
+	inventories := []entity.Purchase{}
 
 	for rows.Next() {
 		if err = rows.Scan(&inventory.Name, &inventory.Quantity); err != nil {

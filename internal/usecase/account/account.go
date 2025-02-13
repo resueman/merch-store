@@ -2,12 +2,12 @@ package account
 
 import (
 	"context"
-	"errors"
 
+	"github.com/resueman/merch-store/internal/delivery/ctxkey"
 	"github.com/resueman/merch-store/internal/entity"
+	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/repo"
-	"github.com/resueman/merch-store/internal/repo/repoerrors"
-	"github.com/resueman/merch-store/internal/usecase/apperrors"
+	"github.com/resueman/merch-store/internal/usecase/converter"
 	"github.com/resueman/merch-store/pkg/db"
 )
 
@@ -29,43 +29,41 @@ func NewAccountUsecase(account repo.Account, operation repo.Operation,
 }
 
 // Проверить:
-// 1. Пользователь существует (уже проверено в middleware?)
-func (u *accountUsecase) GetInfo(ctx context.Context) (*entity.AccountInfo, error) {
-	userID := ctx.Value("userID").(int)
+func (u *accountUsecase) GetInfo(ctx context.Context) (*model.AccountInfo, error) {
+	userID := ctx.Value(ctxkey.ClaimsKey).(model.Claims).UserID
+
 	accountID, err := u.accountRepo.GetIDByUserID(ctx, userID)
-
 	if err != nil {
-		if errors.Is(err, repoerrors.ErrNotFound) {
-			return nil, apperrors.ErrUserNotFound // ?
-		}
-
 		return nil, err
 	}
 
-	info := &entity.AccountInfo{}
+	balance := 0
+	purchases := []entity.Purchase{}
+	incomingTransfers := []entity.Transfer{}
+	outgoingTransfers := []entity.Transfer{}
 	transaction := func(ctx context.Context) error {
 		var err error
 		// в этот момент кто-то может прислать монет
 		// пользователь может на одной странице купить товар, а на второй смотреть баланс и информацию о покупках
-		info.Balance, err = u.accountRepo.GetBalanceByAccountID(ctx, accountID)
+		balance, err = u.accountRepo.GetBalanceByAccountID(ctx, accountID)
 		if err != nil {
 			return err
 		}
 
 		// пользователь может на одной странице купить товар, а на второй смотреть баланс и информацию о покупках
-		info.Inventory, err = u.accountRepo.GetPurchasesByAccountID(ctx, accountID)
+		purchases, err = u.accountRepo.GetPurchasesByAccountID(ctx, accountID)
 		if err != nil {
 			return err
 		}
 
 		// в этот момент кто-то может прислать монет
-		info.IncomingTransfers, err = u.operationRepo.GetIncomingTransfers(ctx, accountID)
+		incomingTransfers, err = u.operationRepo.GetIncomingTransfers(ctx, accountID)
 		if err != nil {
 			return err
 		}
 
 		// на одной странице пользователь отправляет монеты, а на другой подгружает баланс
-		info.OutgoingTransfers, err = u.operationRepo.GetOutgoingTransfers(ctx, accountID)
+		outgoingTransfers, err = u.operationRepo.GetOutgoingTransfers(ctx, accountID)
 		if err != nil {
 			return err
 		}
@@ -80,6 +78,13 @@ func (u *accountUsecase) GetInfo(ctx context.Context) (*entity.AccountInfo, erro
 	serializable := u.txManager.Serializable(ctx, transaction)
 	if err = u.txManager.WithRetry(serializable, shouldRetry); err != nil {
 		return nil, err
+	}
+
+	info := &model.AccountInfo{
+		Balance:           balance,
+		Inventory:         converter.ConvertPurchasesToInventory(purchases),
+		IncomingTransfers: converter.ConvertTransfersToIncomingTransfers(incomingTransfers),
+		OutgoingTransfers: converter.ConvertTransfersToOutgoingTransfers(outgoingTransfers),
 	}
 
 	return info, nil
