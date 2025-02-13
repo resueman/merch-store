@@ -7,6 +7,7 @@ import (
 	"github.com/resueman/merch-store/internal/entity"
 	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/repo"
+	"github.com/resueman/merch-store/internal/usecase/apperrors"
 	"github.com/resueman/merch-store/internal/usecase/converter"
 	"github.com/resueman/merch-store/pkg/db"
 )
@@ -28,11 +29,13 @@ func NewAccountUsecase(account repo.Account, operation repo.Operation,
 	}
 }
 
-// Проверить:
 func (u *accountUsecase) GetInfo(ctx context.Context) (*model.AccountInfo, error) {
-	userID := ctx.Value(ctxkey.ClaimsKey).(model.Claims).UserID
+	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
+	if !ok {
+		return nil, apperrors.ErrInvalidClaims
+	}
 
-	accountID, err := u.accountRepo.GetIDByUserID(ctx, userID)
+	accountID, err := u.accountRepo.GetIDByUserID(ctx, claims.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,11 +74,13 @@ func (u *accountUsecase) GetInfo(ctx context.Context) (*model.AccountInfo, error
 		return nil
 	}
 
-	shouldRetry := func(err error) bool {
+	shouldRetry := func(_ error) bool {
 		return true
 	}
 
-	serializable := u.txManager.Serializable(ctx, transaction)
+	// пожертвуем тем, что баланс может не соответствовать истории операций, если
+	// между его запросом и получением истории операции кто-то выполнит покупку или перевод
+	serializable := u.txManager.ReadCommitted(ctx, db.Read, transaction)
 	if err = u.txManager.WithRetry(serializable, shouldRetry); err != nil {
 		return nil, err
 	}

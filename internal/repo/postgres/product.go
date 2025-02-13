@@ -12,18 +12,21 @@ import (
 )
 
 type ProductRepo struct {
-	db db.Client
+	client db.Client
 }
 
-func NewProductRepo(db db.Client) *ProductRepo {
-	return &ProductRepo{db: db}
+func NewProductRepo(client db.Client) *ProductRepo {
+	return &ProductRepo{client: client}
 }
 
 func (r *ProductRepo) GetProductByName(ctx context.Context, name string) (*entity.Product, error) {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Replica()
+	}
 
-	queryRaw, args, err := builder.Select("id", "name", "price").
+	queryRaw, args, err := database.QueryBuilder().
+		Select("id", "name", "price").
 		From("products").
 		Where(sq.Eq{"name": name}).
 		ToSql()
@@ -35,7 +38,7 @@ func (r *ProductRepo) GetProductByName(ctx context.Context, name string) (*entit
 	query := db.Query{Name: "GetProductByName", QueryRaw: queryRaw}
 	product := entity.Product{}
 
-	if err = primary.QueryRow(ctx, query, args...).Scan(&product.ID, &product.Name, &product.Price); err != nil {
+	if err = database.QueryRow(ctx, query, args...).Scan(&product.ID, &product.Name, &product.Price); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, repoerrors.ErrNotFound
 		}

@@ -34,18 +34,17 @@ func NewOperationUsecase(account repo.Account, operation repo.Operation, product
 // 2. Покупатель существует (уже проверено в middleware?)
 // 3. Кол-во монет достаточно для покупки товара (проверяется в бд, надо вернуть соответствующую ошибку)
 func (u *operationUsecase) BuyItem(ctx context.Context, itemName string) error {
-	userID := ctx.Value(ctxkey.ClaimsKey).(model.Claims).UserID
+	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
+	if !ok {
+		return apperrors.ErrInvalidClaims
+	}
 
-	customerAccountID, err := u.accountRepo.GetIDByUserID(ctx, userID)
+	customerAccountID, err := u.accountRepo.GetIDByUserID(ctx, claims.UserID) // Read!!!!!!!!!!!
 	if err != nil {
-		if errors.Is(err, repoerrors.ErrNotFound) {
-			return apperrors.ErrUserNotFound // ?
-		}
-
 		return err
 	}
 
-	product, err := u.productRepo.GetProductByName(ctx, itemName)
+	product, err := u.productRepo.GetProductByName(ctx, itemName) // Read!!!!!!!!!!
 	if err != nil {
 		if errors.Is(err, repoerrors.ErrNotFound) {
 			return apperrors.ErrProductNotFound
@@ -84,7 +83,7 @@ func (u *operationUsecase) BuyItem(ctx context.Context, itemName string) error {
 		return !errors.Is(err, repoerrors.ErrNotEnoughBalance)
 	}
 
-	serializable := u.txManager.Serializable(ctx, transaction)
+	serializable := u.txManager.Serializable(ctx, db.Write, transaction)
 	if err = u.txManager.WithRetry(serializable, shouldRetry); err != nil {
 		return err
 	}
@@ -103,14 +102,13 @@ func (u *operationUsecase) SendCoin(ctx context.Context, receiverUsername string
 		return apperrors.ErrInvalidAmount
 	}
 
-	userID := ctx.Value(ctxkey.ClaimsKey).(model.Claims).UserID
+	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
+	if !ok {
+		return apperrors.ErrInvalidClaims
+	}
 
-	senderAccountID, err := u.accountRepo.GetIDByUserID(ctx, userID)
+	senderAccountID, err := u.accountRepo.GetIDByUserID(ctx, claims.UserID)
 	if err != nil {
-		if errors.Is(err, repoerrors.ErrNotFound) {
-			return apperrors.ErrUserNotFound // ?
-		}
-
 		return err
 	}
 
@@ -157,8 +155,8 @@ func (u *operationUsecase) SendCoin(ctx context.Context, receiverUsername string
 		return !errors.Is(err, repoerrors.ErrNotEnoughBalance)
 	}
 
-	serializable := u.txManager.Serializable(ctx, transaction)
-	if err = u.txManager.WithRetry(serializable, shouldRetry); err != nil { // если не ошибка ErrNotEnoughBalance, то повторить транзакцию
+	serializable := u.txManager.Serializable(ctx, db.Write, transaction)
+	if err = u.txManager.WithRetry(serializable, shouldRetry); err != nil {
 		return err
 	}
 

@@ -11,40 +11,40 @@ import (
 )
 
 type TxManager struct {
-	db         db.Transactor
+	client     db.Client
 	timeout    int
 	maxRetries int
 }
 
-func NewTxManager(db db.Transactor, timeout int, maxRetries int) *TxManager {
+func NewTxManager(client db.Client, timeout int, maxRetries int) *TxManager {
 	return &TxManager{
-		db:         db,
+		client:     client,
 		timeout:    timeout,
 		maxRetries: maxRetries,
 	}
 }
 
-func (m *TxManager) ReadCommitted(ctx context.Context, f func(ctx context.Context) error) func() error {
+func (m *TxManager) ReadCommitted(ctx context.Context, mode db.Mode, f func(ctx context.Context) error) func() error {
 	txOpts := pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 
 	return func() error {
-		return m.transaction(ctx, txOpts, f)
+		return m.transaction(ctx, txOpts, mode, f)
 	}
 }
 
-func (m *TxManager) RepeatableRead(ctx context.Context, f func(ctx context.Context) error) func() error {
+func (m *TxManager) RepeatableRead(ctx context.Context, mode db.Mode, f func(ctx context.Context) error) func() error {
 	txOpts := pgx.TxOptions{IsoLevel: pgx.RepeatableRead}
 
 	return func() error {
-		return m.transaction(ctx, txOpts, f)
+		return m.transaction(ctx, txOpts, mode, f)
 	}
 }
 
-func (m *TxManager) Serializable(ctx context.Context, f func(ctx context.Context) error) func() error {
+func (m *TxManager) Serializable(ctx context.Context, mode db.Mode, f func(ctx context.Context) error) func() error {
 	txOpts := pgx.TxOptions{IsoLevel: pgx.Serializable}
 
 	return func() error {
-		return m.transaction(ctx, txOpts, f)
+		return m.transaction(ctx, txOpts, mode, f)
 	}
 }
 
@@ -73,13 +73,22 @@ func (m *TxManager) WithRetry(f func() error, shouldRetry func(error) bool) erro
 	return <-errChan
 }
 
-func (m *TxManager) transaction(ctx context.Context, opts pgx.TxOptions, f func(ctx context.Context) error) (err error) {
+func (m *TxManager) transaction(ctx context.Context, opts pgx.TxOptions, mode db.Mode, f func(ctx context.Context) error) (err error) {
 	tx, ok := ctx.Value(postgres.TxCtxKey).(pgx.Tx)
 	if ok {
 		return f(ctx)
 	}
 
-	tx, err = m.db.BeginTx(ctx, opts)
+	var database db.DB
+	if mode == db.Read {
+		database = m.client.Replica()
+	} else {
+		database = m.client.Primary()
+	}
+
+	ctx = context.WithValue(ctx, db.DBKey, database)
+
+	tx, err = database.BeginTx(ctx, opts)
 	if err != nil {
 		return errors.Wrap(err, "error beginning transaction")
 	}

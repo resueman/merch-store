@@ -51,7 +51,18 @@ type RetryAdatapter interface {
 
 type TxManager interface {
 	RetryAdatapter
-	ReadCommitted(ctx context.Context, f func(ctx context.Context) error) func() error
-	RepeatableRead(ctx context.Context, f func(ctx context.Context) error) func() error
-	Serializable(ctx context.Context, f func(ctx context.Context) error) func() error
+	ReadCommitted(ctx context.Context, mode Mode, f func(ctx context.Context) error) func() error
+	RepeatableRead(ctx context.Context, mode Mode, f func(ctx context.Context) error) func() error
+	Serializable(ctx context.Context, mode Mode, f func(ctx context.Context) error) func() error
 }
+
+type DBCtxKey string
+
+const DBKey = DBCtxKey("db")
+
+type Mode int
+
+const (
+	Write Mode = iota
+	Read
+)

@@ -12,18 +12,21 @@ import (
 )
 
 type AccountRepo struct {
-	db db.Client
+	client db.Client
 }
 
-func NewAccountRepo(db db.Client) *AccountRepo {
-	return &AccountRepo{db: db}
+func NewAccountRepo(client db.Client) *AccountRepo {
+	return &AccountRepo{client: client}
 }
 
 func (r *AccountRepo) GetIDByUserID(ctx context.Context, userID int) (int, error) {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Replica()
+	}
 
-	queryRaw, args, err := builder.Select("id").
+	queryRaw, args, err := database.QueryBuilder().
+		Select("id").
 		From("accounts").
 		Where(sq.Eq{"user_id": userID}).
 		ToSql()
@@ -35,7 +38,7 @@ func (r *AccountRepo) GetIDByUserID(ctx context.Context, userID int) (int, error
 	query := db.Query{Name: "GetAccountID", QueryRaw: queryRaw}
 
 	var accountID int
-	if err = primary.QueryRow(ctx, query, args...).Scan(&accountID); err != nil {
+	if err = database.QueryRow(ctx, query, args...).Scan(&accountID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, repoerrors.ErrNotFound
 		}
@@ -47,10 +50,13 @@ func (r *AccountRepo) GetIDByUserID(ctx context.Context, userID int) (int, error
 }
 
 func (r *AccountRepo) GetIDByUsername(ctx context.Context, username string) (int, error) {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Replica()
+	}
 
-	queryRaw, args, err := builder.Select("id").
+	queryRaw, args, err := database.QueryBuilder().
+		Select("id").
 		From("accounts").
 		Join("users ON accounts.user_id = users.id").
 		Where(sq.Eq{"users.username": username}).
@@ -63,7 +69,7 @@ func (r *AccountRepo) GetIDByUsername(ctx context.Context, username string) (int
 	query := db.Query{Name: "GetAccountIDByUsername", QueryRaw: queryRaw}
 
 	var accountID int
-	if err = primary.QueryRow(ctx, query, args...).Scan(&accountID); err != nil {
+	if err = database.QueryRow(ctx, query, args...).Scan(&accountID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, repoerrors.ErrNotFound
 		}
@@ -75,10 +81,13 @@ func (r *AccountRepo) GetIDByUsername(ctx context.Context, username string) (int
 }
 
 func (r *AccountRepo) GetBalanceByAccountID(ctx context.Context, accountID int) (int, error) {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Replica()
+	}
 
-	queryRaw, args, err := builder.Select("balance").
+	queryRaw, args, err := database.QueryBuilder().
+		Select("balance").
 		From("accounts").
 		Where(sq.Eq{"id": accountID}).
 		ToSql()
@@ -90,7 +99,7 @@ func (r *AccountRepo) GetBalanceByAccountID(ctx context.Context, accountID int) 
 	query := db.Query{Name: "GetBalance", QueryRaw: queryRaw}
 
 	var balance int
-	if err = primary.QueryRow(ctx, query, args...).Scan(&balance); err != nil {
+	if err = database.QueryRow(ctx, query, args...).Scan(&balance); err != nil {
 		return 0, err
 	}
 
@@ -98,10 +107,13 @@ func (r *AccountRepo) GetBalanceByAccountID(ctx context.Context, accountID int) 
 }
 
 func (r *AccountRepo) GetPurchasesByAccountID(ctx context.Context, accountID int) ([]entity.Purchase, error) {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Replica()
+	}
 
-	queryRaw, args, err := builder.Select("p.name", "SUM(ops.quantity) AS quantity").
+	queryRaw, args, err := database.QueryBuilder().
+		Select("p.name", "SUM(ops.quantity) AS quantity").
 		From("purchase_operations ops").
 		Join("products p ON ops.product_id = p.id").
 		Where(sq.Eq{"ops.customer_account_id": accountID}).
@@ -114,7 +126,7 @@ func (r *AccountRepo) GetPurchasesByAccountID(ctx context.Context, accountID int
 	}
 
 	query := db.Query{Name: "GetUserPurchases", QueryRaw: queryRaw}
-	rows, err := primary.Query(ctx, query, args...)
+	rows, err := database.Query(ctx, query, args...)
 
 	if err != nil {
 		return nil, err
@@ -135,10 +147,13 @@ func (r *AccountRepo) GetPurchasesByAccountID(ctx context.Context, accountID int
 }
 
 func (r *AccountRepo) Withdraw(ctx context.Context, accountID int, amount int) error {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Primary()
+	}
 
-	selectQuery, args, err := builder.Select("balance").
+	selectQuery, args, err := database.QueryBuilder().
+		Select("balance").
 		From("accounts").
 		Where(sq.Eq{"account_id": accountID}).
 		Suffix("FOR UPDATE").
@@ -151,7 +166,7 @@ func (r *AccountRepo) Withdraw(ctx context.Context, accountID int, amount int) e
 	query := db.Query{Name: "Withdraw: get balance for update", QueryRaw: selectQuery}
 
 	var balance int
-	if err = primary.QueryRow(ctx, query, args...).Scan(&balance); err != nil {
+	if err = database.QueryRow(ctx, query, args...).Scan(&balance); err != nil {
 		return err
 	}
 
@@ -159,7 +174,8 @@ func (r *AccountRepo) Withdraw(ctx context.Context, accountID int, amount int) e
 		return repoerrors.ErrNotEnoughBalance
 	}
 
-	updateQuery, args, err := builder.Update("accounts").
+	updateQuery, args, err := database.QueryBuilder().
+		Update("accounts").
 		Set("balance", sq.Expr("balance - ?", amount)).
 		Where(sq.Eq{"account_id": accountID}).
 		ToSql()
@@ -169,7 +185,7 @@ func (r *AccountRepo) Withdraw(ctx context.Context, accountID int, amount int) e
 	}
 
 	query = db.Query{Name: "Withdraw: update balance", QueryRaw: updateQuery}
-	if _, err = primary.Exec(ctx, query, args...); err != nil {
+	if _, err = database.Exec(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -177,10 +193,13 @@ func (r *AccountRepo) Withdraw(ctx context.Context, accountID int, amount int) e
 }
 
 func (r *AccountRepo) Deposit(ctx context.Context, accountID int, amount int) error {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Primary()
+	}
 
-	queryRaw, args, err := builder.Update("accounts").
+	queryRaw, args, err := database.QueryBuilder().
+		Update("accounts").
 		Set("balance", sq.Expr("balance + ?", amount)).
 		Where(sq.Eq{"id": accountID}).
 		ToSql()
@@ -190,7 +209,7 @@ func (r *AccountRepo) Deposit(ctx context.Context, accountID int, amount int) er
 	}
 
 	query := db.Query{Name: "Deposit", QueryRaw: queryRaw}
-	if _, err = primary.Exec(ctx, query, args...); err != nil {
+	if _, err = database.Exec(ctx, query, args...); err != nil {
 		return err
 	}
 

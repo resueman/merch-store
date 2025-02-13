@@ -9,11 +9,11 @@ import (
 )
 
 type OperationRepo struct {
-	db db.Client
+	client db.Client
 }
 
-func NewOperationRepo(db db.Client) *OperationRepo {
-	return &OperationRepo{db: db}
+func NewOperationRepo(client db.Client) *OperationRepo {
+	return &OperationRepo{client: client}
 }
 
 const (
@@ -22,10 +22,13 @@ const (
 )
 
 func (r *OperationRepo) ExecPurchaseOperation(ctx context.Context, input entity.PurchaseOperation) error {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Primary()
+	}
 
-	insertOperationQuery, args, err := builder.Insert("operations").
+	insertOperationQuery, args, err := database.QueryBuilder().
+		Insert("operations").
 		Columns("account_id", "operation_type").
 		Values(input.CustomerAccountID, operationTypePurchase).
 		Suffix("RETURNING id").
@@ -38,11 +41,12 @@ func (r *OperationRepo) ExecPurchaseOperation(ctx context.Context, input entity.
 	query := db.Query{Name: "BuyItem", QueryRaw: insertOperationQuery}
 
 	var operationID int
-	if err := primary.QueryRow(ctx, query, args...).Scan(&operationID); err != nil {
+	if err := database.QueryRow(ctx, query, args...).Scan(&operationID); err != nil {
 		return err
 	}
 
-	queryRaw, args, err := builder.Insert("purchase_operations").
+	queryRaw, args, err := database.QueryBuilder().
+		Insert("purchase_operations").
 		Columns("operation_id", "product_id", "customer_account_id", "quantity", "total_price").
 		Values(operationID, input.ItemID, input.CustomerAccountID, input.Quantity, input.TotalPrice).
 		ToSql()
@@ -52,7 +56,7 @@ func (r *OperationRepo) ExecPurchaseOperation(ctx context.Context, input entity.
 	}
 
 	query = db.Query{Name: "BuyItem", QueryRaw: queryRaw}
-	if _, err = primary.Exec(ctx, query, args...); err != nil {
+	if _, err = database.Exec(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -60,10 +64,13 @@ func (r *OperationRepo) ExecPurchaseOperation(ctx context.Context, input entity.
 }
 
 func (r *OperationRepo) ExecTransferOperation(ctx context.Context, input entity.TransferOperation) error {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Primary()
+	}
 
-	insertOperationQuery, args, err := builder.Insert("operations").
+	insertOperationQuery, args, err := database.QueryBuilder().
+		Insert("operations").
 		Columns("account_id", "operation_type").
 		Values(input.SenderAccountID, operationTypeTransfer).
 		Suffix("RETURNING id").
@@ -76,11 +83,12 @@ func (r *OperationRepo) ExecTransferOperation(ctx context.Context, input entity.
 	query := db.Query{Name: "ExecTransferOperation", QueryRaw: insertOperationQuery}
 
 	var operationID int
-	if err := primary.QueryRow(ctx, query, args...).Scan(&operationID); err != nil {
+	if err := database.QueryRow(ctx, query, args...).Scan(&operationID); err != nil {
 		return err
 	}
 
-	queryRaw, args, err := builder.Insert("transfer_operations").
+	queryRaw, args, err := database.QueryBuilder().
+		Insert("transfer_operations").
 		Columns("operation_id", "sender_account_id", "recipient_account_id", "amount").
 		Values(operationID, input.SenderAccountID, input.RecipientAccountID, input.Amount).
 		ToSql()
@@ -90,7 +98,7 @@ func (r *OperationRepo) ExecTransferOperation(ctx context.Context, input entity.
 	}
 
 	query = db.Query{Name: "ExecTransferOperation", QueryRaw: queryRaw}
-	if _, err = primary.Exec(ctx, query, args...); err != nil {
+	if _, err = database.Exec(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -98,10 +106,13 @@ func (r *OperationRepo) ExecTransferOperation(ctx context.Context, input entity.
 }
 
 func (r *OperationRepo) GetOutgoingTransfers(ctx context.Context, accountID int) ([]entity.Transfer, error) {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Replica()
+	}
 
-	queryRaw, args, err := builder.Select("amount", "users.username as recipient_username").
+	queryRaw, args, err := database.QueryBuilder().
+		Select("amount", "users.username as recipient_username").
 		From("transfer_operations").
 		Join("accounts ON transfer_operations.recipient_account_id = accounts.id").
 		Join("users ON accounts.id = users.id").
@@ -113,7 +124,7 @@ func (r *OperationRepo) GetOutgoingTransfers(ctx context.Context, accountID int)
 	}
 
 	query := db.Query{Name: "GetSentCoins", QueryRaw: queryRaw}
-	rows, err := primary.Query(ctx, query, args...)
+	rows, err := database.Query(ctx, query, args...)
 
 	if err != nil {
 		return nil, err
@@ -134,10 +145,13 @@ func (r *OperationRepo) GetOutgoingTransfers(ctx context.Context, accountID int)
 }
 
 func (r *OperationRepo) GetIncomingTransfers(ctx context.Context, accountID int) ([]entity.Transfer, error) {
-	primary := r.db.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Replica()
+	}
 
-	queryRaw, args, err := builder.Select("amount", "users.username as sender_username").
+	queryRaw, args, err := database.QueryBuilder().
+		Select("amount", "users.username as sender_username").
 		From("transfer_operations").
 		Join("accounts ON transfer_operations.sender_account_id = accounts.id").
 		Join("users ON accounts.id = users.id").
@@ -149,7 +163,7 @@ func (r *OperationRepo) GetIncomingTransfers(ctx context.Context, accountID int)
 	}
 
 	query := db.Query{Name: "GetReceivedCoins", QueryRaw: queryRaw}
-	rows, err := primary.Query(ctx, query, args...)
+	rows, err := database.Query(ctx, query, args...)
 
 	if err != nil {
 		return nil, err

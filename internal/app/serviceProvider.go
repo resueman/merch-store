@@ -89,8 +89,8 @@ func (p *serviceProvider) DbClient(ctx context.Context) db.Client {
 func (p *serviceProvider) TxManager(ctx context.Context) db.TxManager {
 	if p.txManager == nil {
 		timeout := p.Config().TxManager.TimeoutSec
-		maxRetries := p.Config().TxManager.RetryCount
-		p.txManager = txmanager.NewTxManager(p.DbClient(ctx).Primary(), timeout, maxRetries)
+		maxRetries := p.Config().TxManager.MaxRetries
+		p.txManager = txmanager.NewTxManager(p.DbClient(ctx), timeout, maxRetries)
 	}
 
 	return p.txManager

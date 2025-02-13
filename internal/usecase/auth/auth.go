@@ -50,7 +50,7 @@ func (u *authUsecase) GenerateToken(ctx context.Context, input model.AuthRequest
 		return "", err
 	}
 
-	userID, err := u.registerUser(ctx, input)
+	userID, err := u.registerUser(ctx, input) // Write!!!!!!!!!!!!
 	if err != nil {
 		return "", err
 	}

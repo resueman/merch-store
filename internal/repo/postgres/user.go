@@ -20,10 +20,13 @@ func NewUserRepo(client db.Client) *UserRepo {
 }
 
 func (r *UserRepo) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
-	primary := r.client.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Replica()
+	}
 
-	queryRaw, args, err := builder.Select("id", "username", "password").
+	queryRaw, args, err := database.QueryBuilder().
+		Select("id", "username", "password").
 		From("users").
 		Where(sq.Eq{"username": username}).
 		ToSql()
@@ -33,7 +36,7 @@ func (r *UserRepo) GetUserByUsername(ctx context.Context, username string) (*ent
 	}
 
 	query := db.Query{QueryRaw: queryRaw, Name: "GetUserByUsername"}
-	row := primary.QueryRow(ctx, query, args...)
+	row := database.QueryRow(ctx, query, args...)
 
 	var user entity.User
 	if err := row.Scan(&user.ID, &user.Username, &user.Hash); err != nil {
@@ -48,10 +51,13 @@ func (r *UserRepo) GetUserByUsername(ctx context.Context, username string) (*ent
 }
 
 func (r *UserRepo) CreateUser(ctx context.Context, user *entity.CreateUserInput) (int, error) {
-	primary := r.client.Primary()
-	builder := primary.QueryBuilder()
+	database, ok := ctx.Value(db.DBKey).(db.DB)
+	if !ok {
+		database = r.client.Primary()
+	}
 
-	queryRaw, args, err := builder.Insert("users").
+	queryRaw, args, err := database.QueryBuilder().
+		Insert("users").
 		Columns("username", "password").
 		Values(user.Username, user.Hash).
 		Suffix("RETURNING id").
@@ -62,7 +68,7 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *entity.CreateUserInput)
 	}
 
 	query := db.Query{QueryRaw: queryRaw, Name: "CreateUser"}
-	row := primary.QueryRow(ctx, query, args...)
+	row := database.QueryRow(ctx, query, args...)
 
 	var id int
 	if err := row.Scan(&id); err != nil {
