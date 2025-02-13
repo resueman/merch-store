@@ -14,12 +14,11 @@ postgres:
 
 txManager:
   timeoutSec: 3
-  retryCount: 3
+  maxRetries: 3
 
 jwt:
   secret: 'secret'
-  accessTtl: 15
-  refreshTtl: 30
+  ttl: 15
 
 logger:
   level: 'debug'

@@ -31,9 +31,8 @@ type Postgres struct {
 }
 
 type JWT struct {
-	Secret           string `yaml:"secret"`
-	AccessTTLMinutes int    `yaml:"jwtAccessTtl" env:"JWT_ACCESS_TTL_MINUTES" env-default:"15"`
-	RefreshTTLDays   int    `yaml:"jwtRefreshTtl" env:"JWT_REFRESH_TTL_DAYS" env-default:"30"`
+	Secret string `yaml:"secret"`
+	TTL    int    `yaml:"ttl" env:"JWT_TTL_MINUTES" env-default:"15"`
 }
 
 type Logger struct {
@@ -43,7 +42,7 @@ type Logger struct {
 
 type TxManager struct {
 	TimeoutSec int `yaml:"timeoutSec" env:"TIMEOUT_SEC" env-default:"3"`
-	RetryCount int `yaml:"retryCount" env:"RETRY_COUNT" env-default:"3"`
+	MaxRetries int `yaml:"maxRetries" env:"MAX_RETRIES" env-default:"3"`
 }
 
 //nolint:exhaustruct
