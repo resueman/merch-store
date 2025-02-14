@@ -15,6 +15,7 @@ type Closer struct {
 	funcs     []CloseFunc
 	funcsDone chan struct{}
 	shutdown  chan os.Signal
+	notify    chan os.Signal
 }
 
 // Callback-функция завершения.
@@ -25,12 +26,14 @@ func NewCloser(signals ...os.Signal) *Closer {
 	c := &Closer{
 		funcsDone: make(chan struct{}),
 		shutdown:  make(chan os.Signal, 1),
+		notify:    make(chan os.Signal, 1),
 	}
 
 	if len(signals) > 0 {
 		go func() {
 			signal.Notify(c.shutdown, signals...)
 			<-c.shutdown
+			close(c.notify)
 			signal.Stop(c.shutdown)
 			c.CloseAll()
 		}()
@@ -54,6 +57,11 @@ func (c *Closer) Add(f ...CloseFunc) {
 // Ожидает завершения всех функций, добавленных через Add.
 func (c *Closer) Wait() {
 	<-c.funcsDone
+}
+
+// Возвращает канал, который закроется при получении сигнала на завершение работы.
+func (c *Closer) Notify() <-chan os.Signal {
+	return c.notify
 }
 
 // Возвращает канал, который закроется при завершении всех функций, добавленных через Add.

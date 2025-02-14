@@ -18,8 +18,8 @@ type operationHandler struct {
 func newOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.MiddlewareFunc) *operationHandler {
 	h := &operationHandler{operationUsecase: usecase}
 
-	e.GET("/buy/:item", h.buyItem, m...)
-	e.POST("/sendCoin", h.sendCoin, m...)
+	e.GET("api/buy/:item", h.buyItem, m...)
+	e.POST("api/sendCoin", h.sendCoin, m...)
 
 	return h
 }
@@ -54,8 +54,8 @@ func (h *operationHandler) validateSendCoinRequest(input *dto.SendCoinRequest) s
 // (POST /api/sendCoin): отправить монеты другому пользователю.
 func (h *operationHandler) sendCoin(ctx echo.Context) error {
 	var input dto.SendCoinRequest
-	if err := ctx.Bind(input); err != nil {
-		return response.SendHandlerError(ctx, http.StatusBadRequest, err.Error())
+	if err := ctx.Bind(&input); err != nil {
+		return response.SendHandlerError(ctx, http.StatusBadRequest, response.ErrBindingMessage)
 	}
 
 	if errMsg := h.validateSendCoinRequest(&input); errMsg != "" {

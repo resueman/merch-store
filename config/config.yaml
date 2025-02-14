@@ -2,23 +2,15 @@ httpServer:
   port: 8080
 
 postgres:
-  dsn: 'postgres://postgres:postgres@localhost:5432/postgres'
-  username: 'postgres'
-  password: 'postgres'
-  host: 'localhost'
-  port: 5432
-  db: 'postgres'
-  sslMode: 'disable'
-  timeoutSec: 3
-  maxRetries: 3
+  dsn: 'postgres://user:password@localhost:5432/merch_store?sslmode=disable'
 
 txManager:
-  timeoutSec: 3
+  timeoutMs: 10
   maxRetries: 3
 
 jwt:
   secret: 'secret'
-  ttl: 15
+  ttlMin: 180
 
 logger:
   level: 'debug'

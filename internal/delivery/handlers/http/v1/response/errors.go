@@ -1,6 +1,7 @@
 package response
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/resueman/merch-store/internal/usecase/apperrors"
@@ -10,9 +11,8 @@ const (
 	ErrInvalidAmountMessage    = "amount must be positive"
 	ErrSelfTransferMessage     = "you can't send coins to yourself"
 	ErrNotEnoughBalanceMessage = "not enough balance to perform this operation"
-
-	ErrUserNotFoundMessage    = "user not found" // ?
-	ErrProductNotFoundMessage = "product not found"
+	ErrUserNotFoundMessage     = "user not found"
+	ErrProductNotFoundMessage  = "product not found"
 
 	ErrInvalidPasswordMessage = "invalid password"
 	ErrInvalidTokenMessage    = "invalid token"
@@ -21,32 +21,43 @@ const (
 
 	ErrUnknownMessage = "internal server error"
 
-	ErrBindingMessage = "failed to bind request body"
+	ErrBindingMessage = "invalid request body"
 )
 
 //nolint:errorlint
 func getReturnHTTPCodeAndMessage(err error) (int, string) {
-	switch err {
-	case apperrors.ErrInvalidAmount:
-		return http.StatusBadRequest, ErrInvalidAmountMessage
-	case apperrors.ErrSelfTransfer:
-		return http.StatusBadRequest, ErrSelfTransferMessage
-	case apperrors.ErrNotEnoughBalance:
-		return http.StatusBadRequest, ErrNotEnoughBalanceMessage
-	case apperrors.ErrUserNotFound:
-		return http.StatusBadRequest, ErrUserNotFoundMessage
-	case apperrors.ErrProductNotFound:
-		return http.StatusBadRequest, ErrProductNotFoundMessage
-	case apperrors.ErrInvalidPassword:
-		return http.StatusBadRequest, ErrInvalidPasswordMessage
-	case apperrors.ErrInvalidToken:
-		return http.StatusBadRequest, ErrInvalidTokenMessage
-	case apperrors.ErrTokenExpired:
-		return http.StatusBadRequest, ErrTokenExpiredMessage
-	case apperrors.ErrGenerateToken:
-		return http.StatusInternalServerError, ErrGenerateTokenMessage
-	case apperrors.ErrInvalidClaims:
-		return http.StatusBadRequest, ErrUnknownMessage
+	badRequestErrors := []struct {
+		err     error
+		message string
+	}{
+		{apperrors.ErrInvalidAmount, ErrInvalidAmountMessage},
+		{apperrors.ErrSelfTransfer, ErrSelfTransferMessage},
+		{apperrors.ErrNotEnoughBalance, ErrNotEnoughBalanceMessage},
+		{apperrors.ErrUserNotFound, ErrUserNotFoundMessage},
+		{apperrors.ErrProductNotFound, ErrProductNotFoundMessage},
+	}
+
+	for _, e := range badRequestErrors {
+		if errors.Is(err, e.err) {
+			return http.StatusBadRequest, e.message
+		}
+	}
+
+	unauthorizedErrors := []struct {
+		err     error
+		message string
+	}{
+		{apperrors.ErrInvalidPassword, ErrInvalidPasswordMessage},
+		{apperrors.ErrInvalidToken, ErrInvalidTokenMessage},
+		{apperrors.ErrTokenExpired, ErrTokenExpiredMessage},
+		{apperrors.ErrGenerateToken, ErrGenerateTokenMessage},
+		{apperrors.ErrInvalidClaims, ErrUnknownMessage},
+	}
+
+	for _, e := range unauthorizedErrors {
+		if errors.Is(err, e.err) {
+			return http.StatusUnauthorized, e.message
+		}
 	}
 
 	return http.StatusInternalServerError, ErrUnknownMessage

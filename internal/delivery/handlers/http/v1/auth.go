@@ -19,7 +19,7 @@ type authHandler struct {
 func newAuthHandler(e *echo.Echo, authService usecase.Auth) *authHandler {
 	h := &authHandler{authService: authService}
 
-	e.POST("/auth", h.auth)
+	e.POST("/api/auth", h.auth)
 
 	return h
 }
@@ -42,7 +42,7 @@ func (h *authHandler) validateAuthRequest(input *dto.AuthRequest) string {
 func (h *authHandler) auth(ctx echo.Context) error {
 	var input dto.AuthRequest
 	if err := ctx.Bind(&input); err != nil {
-		return response.SendHandlerError(ctx, http.StatusBadRequest, "invalid request body")
+		return response.SendHandlerError(ctx, http.StatusBadRequest, response.ErrBindingMessage)
 	}
 
 	if errMsg := h.validateAuthRequest(&input); errMsg != "" {

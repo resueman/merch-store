@@ -8,12 +8,39 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+// Tx Manager.
+
+type Mode int
+
+const (
+	Write Mode = iota
+	Read
+)
+
+type RetryAdatapter interface {
+	WithRetry(f func() error) error
+}
+
+type TxManager interface {
+	RetryAdatapter
+	ReadCommitted(ctx context.Context, mode Mode, f func(ctx context.Context) error) func() error
+	RepeatableRead(ctx context.Context, mode Mode, f func(ctx context.Context) error) func() error
+	Serializable(ctx context.Context, mode Mode, f func(ctx context.Context) error) func() error
+}
+
+// DB.
+
 type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
 type Transactor interface {
 	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+}
+
+type Query struct {
+	Name     string
+	QueryRaw string
 }
 
 type QueryExecutor interface {
@@ -39,30 +66,16 @@ type DB interface {
 	Transactor
 }
 
+type CtxKey string
+
+const (
+	DBKey CtxKey = "db"
+)
+
+// Client.
+
 type Client interface {
 	Primary() DB
 	Replica() DB
 	Close() error
 }
-
-type RetryAdatapter interface {
-	WithRetry(f func() error) error
-}
-
-type TxManager interface {
-	RetryAdatapter
-	ReadCommitted(ctx context.Context, mode Mode, f func(ctx context.Context) error) func() error
-	RepeatableRead(ctx context.Context, mode Mode, f func(ctx context.Context) error) func() error
-	Serializable(ctx context.Context, mode Mode, f func(ctx context.Context) error) func() error
-}
-
-type DBCtxKey string
-
-const DBKey = DBCtxKey("db")
-
-type Mode int
-
-const (
-	Write Mode = iota
-	Read
-)

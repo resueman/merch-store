@@ -15,7 +15,7 @@ type accountHandler struct {
 func newAccountHandler(e *echo.Echo, usecase usecase.Account, m ...echo.MiddlewareFunc) *accountHandler {
 	h := &accountHandler{accountUsecase: usecase}
 
-	e.GET("/info", h.getInfo, m...)
+	e.GET("api/info", h.getInfo, m...)
 
 	return h
 }

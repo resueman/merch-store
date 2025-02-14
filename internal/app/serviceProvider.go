@@ -2,10 +2,11 @@ package app
 
 import (
 	"context"
-	"log"
 	"os"
+	"time"
 
 	"github.com/labstack/echo"
+	"github.com/labstack/gommon/log"
 	"github.com/resueman/merch-store/config"
 	v1 "github.com/resueman/merch-store/internal/delivery/handlers/http/v1"
 	"github.com/resueman/merch-store/internal/delivery/middleware"
@@ -14,7 +15,6 @@ import (
 	"github.com/resueman/merch-store/pkg/closer"
 	"github.com/resueman/merch-store/pkg/db"
 	"github.com/resueman/merch-store/pkg/db/postgres"
-	"github.com/resueman/merch-store/pkg/db/txmanager"
 	"github.com/resueman/merch-store/pkg/password"
 )
 
@@ -81,16 +81,20 @@ func (p *serviceProvider) DbClient(ctx context.Context) db.Client {
 	}
 
 	p.dbClient = client
-	p.closer.Add(p.dbClient.Close)
+	p.Closer().Add(func() error {
+		log.Info("stopping db client...")
+
+		return p.dbClient.Close()
+	})
 
 	return p.dbClient
 }
 
 func (p *serviceProvider) TxManager(ctx context.Context) db.TxManager {
 	if p.txManager == nil {
-		timeout := p.Config().TxManager.TimeoutSec
+		timeout := time.Duration(p.Config().TxManager.TimeoutMs) * time.Millisecond
 		maxRetries := p.Config().TxManager.MaxRetries
-		p.txManager = txmanager.NewTxManager(p.DbClient(ctx), timeout, maxRetries)
+		p.txManager = postgres.NewTxManager(p.DbClient(ctx), timeout, maxRetries)
 	}
 
 	return p.txManager
@@ -115,7 +119,10 @@ func (p *serviceProvider) PasswordManager() *password.BcryptManager {
 
 func (p *serviceProvider) Usecases(ctx context.Context) *usecase.Usecase {
 	if p.usecases == nil {
-		p.usecases = usecase.NewUsecase(p.Repositories(ctx), p.TxManager(ctx), p.PasswordManager())
+		secret := p.Config().JWT.Secret
+		ttl := time.Duration(p.Config().JWT.TTLMin) * time.Minute
+
+		p.usecases = usecase.NewUsecase(p.Repositories(ctx), p.TxManager(ctx), p.PasswordManager(), secret, ttl)
 	}
 
 	return p.usecases

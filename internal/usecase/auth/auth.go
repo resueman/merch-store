@@ -20,8 +20,14 @@ type authUsecase struct {
 	passwordManager PasswordManager
 }
 
-func NewAuthUsecase(userRepo repo.User, passwordManager PasswordManager) *authUsecase {
-	return &authUsecase{userRepo: userRepo, passwordManager: passwordManager}
+func NewAuthUsecase(userRepo repo.User, passwordManager PasswordManager,
+	secretKey string, tokenTTL time.Duration) *authUsecase {
+	return &authUsecase{
+		userRepo:        userRepo,
+		passwordManager: passwordManager,
+		secretKey:       secretKey,
+		tokenTTL:        tokenTTL,
+	}
 }
 
 type PasswordManager interface {
@@ -50,7 +56,7 @@ func (u *authUsecase) GenerateToken(ctx context.Context, input model.AuthRequest
 		return "", err
 	}
 
-	userID, err := u.registerUser(ctx, input) // Write!!!!!!!!!!!!
+	userID, err := u.registerUser(ctx, input)
 	if err != nil {
 		return "", err
 	}

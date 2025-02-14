@@ -56,7 +56,7 @@ func (r *AccountRepo) GetIDByUsername(ctx context.Context, username string) (int
 	}
 
 	queryRaw, args, err := database.QueryBuilder().
-		Select("id").
+		Select("accounts.id").
 		From("accounts").
 		Join("users ON accounts.user_id = users.id").
 		Where(sq.Eq{"users.username": username}).
@@ -155,7 +155,7 @@ func (r *AccountRepo) Withdraw(ctx context.Context, accountID int, amount int) e
 	selectQuery, args, err := database.QueryBuilder().
 		Select("balance").
 		From("accounts").
-		Where(sq.Eq{"account_id": accountID}).
+		Where(sq.Eq{"id": accountID}).
 		Suffix("FOR UPDATE").
 		ToSql()
 
@@ -177,7 +177,7 @@ func (r *AccountRepo) Withdraw(ctx context.Context, accountID int, amount int) e
 	updateQuery, args, err := database.QueryBuilder().
 		Update("accounts").
 		Set("balance", sq.Expr("balance - ?", amount)).
-		Where(sq.Eq{"account_id": accountID}).
+		Where(sq.Eq{"id": accountID}).
 		ToSql()
 
 	if err != nil {

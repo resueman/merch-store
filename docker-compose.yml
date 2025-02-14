@@ -4,13 +4,13 @@ services:
   postgres_db:
     image: postgres:17
     container_name: merch_store_db
-    restart: always
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: merch_store
+    env_file:
+      - .env
+    #environment:
+    #  DSN: ${DSN}
     ports:
-      - "5433:5432"
+      - "5432:5432"
+#    restart: always
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "user", "-d", "merch_store"]
       interval: 5s
@@ -21,6 +21,8 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   default_migrate:
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: migrations/Dockerfile
@@ -29,15 +31,11 @@ services:
       postgres_db:
         condition: service_healthy
     restart: on-failure
-    environment:
-      POSTGRES_HOST: postgres_db
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: merch_store
+    #environment:
+    #  MIGRATION_DIR: ./migrations
+    #  MIGRATION_DSN: postgres_db://user:password@localhost:5432/merch_store?sslmode=disable
     volumes:
       - ./migrations:/migrations
-    #command: ["/migrate.sh"]
 
   app:
     build: .
@@ -45,11 +43,11 @@ services:
     restart: always
     depends_on:
       - postgres_db
-    environment:
-      DATABASE_URL: postgres://user:password@db:5432/merch_store?sslmode=disable
-      PORT: 8080
+    #environment:
+    #  DSN: ${DSN}
+    #  PORT: 8080
     ports:
-      - "8080:8080"
+      - "${HTTP_SERVER_PORT}:${HTTP_SERVER_PORT}"
 
 volumes:
   pg_data:

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
@@ -56,7 +57,31 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *entity.CreateUserInput)
 		database = r.client.Primary()
 	}
 
-	queryRaw, args, err := database.QueryBuilder().
+	tx, err := database.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return 0, fmt.Errorf("error beginning transaction: %v", err)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("recover from panic: %v", r)
+		}
+
+		if err != nil {
+			if errRollback := tx.Rollback(ctx); errRollback != nil {
+				err = fmt.Errorf("rollback error: %v", errRollback)
+			}
+
+			return
+		}
+
+		err = tx.Commit(ctx)
+		if err != nil {
+			err = fmt.Errorf("error committing transaction: %v", err)
+		}
+	}()
+
+	createUserRaw, args, err := database.QueryBuilder().
 		Insert("users").
 		Columns("username", "password").
 		Values(user.Username, user.Hash).
@@ -67,13 +92,26 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *entity.CreateUserInput)
 		return 0, err
 	}
 
-	query := db.Query{QueryRaw: queryRaw, Name: "CreateUser"}
-	row := database.QueryRow(ctx, query, args...)
+	row := tx.QueryRow(ctx, createUserRaw, args...)
 
-	var id int
-	if err := row.Scan(&id); err != nil {
+	var userID int
+	if err := row.Scan(&userID); err != nil {
 		return 0, err
 	}
 
-	return id, nil
+	createAccountRaw, args, err := database.QueryBuilder().
+		Insert("accounts").
+		Columns("user_id").
+		Values(userID).
+		ToSql()
+
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = tx.Exec(ctx, createAccountRaw, args...); err != nil {
+		return 0, err
+	}
+
+	return userID, nil
 }

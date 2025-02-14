@@ -1,4 +1,4 @@
-package store
+package main
 
 import (
 	"os"
@@ -7,7 +7,7 @@ import (
 	"github.com/resueman/merch-store/internal/app"
 )
 
-const configPath = "./config/config.yaml"
+const configPath = "../../config/config.yaml"
 
 func main() {
 	app := app.NewApp(configPath, os.Interrupt, syscall.SIGTERM)

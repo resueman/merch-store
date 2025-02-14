@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/repo"
@@ -37,9 +38,10 @@ type PasswordManager interface {
 	ComparePassword(password, hash string) bool
 }
 
-func NewUsecase(repo *repo.Repositories, txManager db.TxManager, passwordManager PasswordManager) *Usecase {
+func NewUsecase(repo *repo.Repositories, txManager db.TxManager,
+	passwordManager PasswordManager, secretKey string, tokenTTL time.Duration) *Usecase {
 	return &Usecase{
-		Auth:      auth.NewAuthUsecase(repo.User, passwordManager),
+		Auth:      auth.NewAuthUsecase(repo.User, passwordManager, secretKey, tokenTTL),
 		Account:   account.NewAccountUsecase(repo.Account, repo.Operation, repo.Product, txManager),
 		Operation: operation.NewOperationUsecase(repo.Account, repo.Operation, repo.Product, txManager),
 		TxManager: txManager,

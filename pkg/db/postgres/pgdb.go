@@ -17,16 +17,19 @@ const (
 	defaultConnTimeout  = time.Second
 )
 
-var _ db.DB = (*pg)(nil) // это очень плохо надо переделать
+var _ db.DB = (*pg)(nil)
 
 type key string
 
 const (
-	TxCtxKey key = "tx"
+	TxKey key = "tx"
 )
 
-func ContextWithTx(ctx context.Context, tx pgx.Tx) context.Context {
-	return context.WithValue(ctx, TxCtxKey, tx)
+func ContextWithTx(ctx context.Context, tx pgx.Tx, database db.DB) context.Context {
+	newCtx := context.WithValue(ctx, TxKey, tx)
+	newCtx = context.WithValue(newCtx, db.DBKey, database)
+
+	return newCtx
 }
 
 type pg struct {
@@ -62,7 +65,7 @@ func (p *pg) Ping(ctx context.Context) error {
 }
 
 func (p *pg) Exec(ctx context.Context, q db.Query, args ...interface{}) (pgconn.CommandTag, error) {
-	tx, ok := ctx.Value(TxCtxKey).(pgx.Tx)
+	tx, ok := ctx.Value(TxKey).(pgx.Tx)
 	if ok {
 		return tx.Exec(ctx, q.QueryRaw, args...)
 	}
@@ -71,7 +74,7 @@ func (p *pg) Exec(ctx context.Context, q db.Query, args ...interface{}) (pgconn.
 }
 
 func (p *pg) Query(ctx context.Context, q db.Query, args ...interface{}) (pgx.Rows, error) {
-	tx, ok := ctx.Value(TxCtxKey).(pgx.Tx)
+	tx, ok := ctx.Value(TxKey).(pgx.Tx)
 	if ok {
 		return tx.Query(ctx, q.QueryRaw, args...)
 	}
@@ -80,12 +83,21 @@ func (p *pg) Query(ctx context.Context, q db.Query, args ...interface{}) (pgx.Ro
 }
 
 func (p *pg) QueryRow(ctx context.Context, q db.Query, args ...interface{}) pgx.Row {
-	tx, ok := ctx.Value(TxCtxKey).(pgx.Tx)
+	tx, ok := ctx.Value(TxKey).(pgx.Tx)
 	if ok {
 		return tx.QueryRow(ctx, q.QueryRaw, args...)
 	}
 
 	return p.pool.QueryRow(ctx, q.QueryRaw, args...)
+}
+
+func (p *pg) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error) {
+	tx, ok := ctx.Value(TxKey).(pgx.Tx)
+	if ok {
+		return tx, nil
+	}
+
+	return p.pool.BeginTx(ctx, txOptions)
 }
 
 func (p *pg) Close() error {
@@ -94,13 +106,4 @@ func (p *pg) Close() error {
 	}
 
 	return nil
-}
-
-func (p *pg) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error) {
-	tx, ok := ctx.Value(TxCtxKey).(pgx.Tx)
-	if ok {
-		return tx, nil
-	}
-
-	return p.pool.BeginTx(ctx, txOptions)
 }

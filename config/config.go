@@ -15,24 +15,16 @@ type Config struct {
 }
 
 type HTTPServer struct {
-	Port string `yaml:"port" env:"HTTP_SERVER_PORT" env-default:"8080"`
+	Port string `yaml:"port" env:"HTTP_SERVER_PORT" env-default:":8080"`
 }
 
 type Postgres struct {
-	DSN        string `yaml:"dsn" env:"POSTGRES_DSN" env-default:"postgres://postgres:postgres@localhost:5432/postgres"`
-	Username   string `yaml:"username" env:"POSTGRES_USER" env-default:"postgres"`
-	Password   string `yaml:"password" env:"POSTGRES_PASSWORD" env-default:"postgres"`
-	Host       string `yaml:"host" env:"HOST" env-default:"localhost"`
-	Port       int    `yaml:"port" env:"PORT" env-default:"5432"`
-	DB         string `yaml:"db" env:"POSTGRES_DB" env-default:"postgres"`
-	SSLMode    string `yaml:"sslMode" env:"SSL_MODE" env-default:"disable"`
-	TimeoutSec int    `yaml:"timeoutSec" env:"TIMEOUT_SEC" env-default:"3"`
-	MaxRetries int    `yaml:"maxRetries" env:"MAX_RETRIES" env-default:"3"`
+	DSN string `yaml:"dsn" env:"DSN" env-required:"true"`
 }
 
 type JWT struct {
-	Secret string `yaml:"secret"`
-	TTL    int    `yaml:"ttl" env:"JWT_TTL_MINUTES" env-default:"15"`
+	Secret string `yaml:"secret" env:"JWT_SECRET" env-required:"true"`
+	TTLMin int    `yaml:"ttlMin" env:"JWT_TTL_MINUTES" env-required:"true"`
 }
 
 type Logger struct {
@@ -41,8 +33,8 @@ type Logger struct {
 }
 
 type TxManager struct {
-	TimeoutSec int `yaml:"timeoutSec" env:"TIMEOUT_SEC" env-default:"3"`
-	MaxRetries int `yaml:"maxRetries" env:"MAX_RETRIES" env-default:"3"`
+	TimeoutMs  int `yaml:"timeoutMs" env:"TX_TIMEOUT_MS" env-required:"true"`
+	MaxRetries int `yaml:"maxRetries" env:"TX_MAX_RETRIES" env-required:"true"`
 }
 
 //nolint:exhaustruct

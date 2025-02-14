@@ -1,12 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/labstack/echo"
 	"github.com/resueman/merch-store/internal/delivery/ctxkey"
 	"github.com/resueman/merch-store/internal/delivery/handlers/http/v1/response"
+	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/usecase"
 )
 
@@ -37,11 +39,22 @@ func (m *AuthMiddleware) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 
 		claims, err := m.authUsecase.ParseToken(ctx.Request().Context(), tokenString)
 		if err != nil {
-			return response.SendHandlerError(ctx, http.StatusUnauthorized, "Invalid token")
+			return response.SendUsecaseError(ctx, err)
 		}
 
-		ctx.Set(string(ctxkey.ClaimsKey), claims)
+		SetContext(ctx, claims)
+		//ctx.Set(string(ctxkey.ClaimsKey), claims)
+		//claims, ok := ctx.Request().Context().Value(ctxkey.ClaimsKey).(model.Claims)
+		//if !ok {
+		//	log.Error("Lost claims")
+		//}
 
 		return next(ctx)
 	}
+}
+
+func SetContext(ctx echo.Context, claims model.Claims) {
+	newCtx := context.WithValue(ctx.Request().Context(), ctxkey.ClaimsKey, claims)
+	req := ctx.Request().WithContext(newCtx)
+	ctx.SetRequest(req)
 }
