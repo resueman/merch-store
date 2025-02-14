@@ -26,3 +26,5 @@ go.work.sum
 
 # Installed dependencies
 /bin/
+
+/.vscode/
