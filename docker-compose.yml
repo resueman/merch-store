@@ -2,15 +2,13 @@ version: "3.8"
 
 services:
   postgres_db:
-    image: postgres:17
-    container_name: merch_store_db
     env_file:
       - .env
-    #environment:
-    #  DSN: ${DSN}
+    image: postgres:17
+    container_name: merch_store_db
     ports:
       - "5432:5432"
-#    restart: always
+    restart: always
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "user", "-d", "merch_store"]
       interval: 5s
@@ -31,21 +29,17 @@ services:
       postgres_db:
         condition: service_healthy
     restart: on-failure
-    #environment:
-    #  MIGRATION_DIR: ./migrations
-    #  MIGRATION_DSN: postgres_db://user:password@localhost:5432/merch_store?sslmode=disable
     volumes:
       - ./migrations:/migrations
 
   app:
+    env_file:
+      - .env
     build: .
     container_name: merch_store_server
     restart: always
     depends_on:
       - postgres_db
-    #environment:
-    #  DSN: ${DSN}
-    #  PORT: 8080
     ports:
       - "${HTTP_SERVER_PORT}:${HTTP_SERVER_PORT}"
 

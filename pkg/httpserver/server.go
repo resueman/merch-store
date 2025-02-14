@@ -14,7 +14,7 @@ type Server struct {
 func New(handler http.Handler, address string) *Server {
 	httpServer := &http.Server{
 		Handler: handler,
-		Addr:    address,
+		Addr:    ":" + address,
 	}
 
 	s := &Server{
@@ -28,7 +28,6 @@ func New(handler http.Handler, address string) *Server {
 func (s *Server) Start() {
 	go func() {
 		s.errChan <- s.server.ListenAndServe()
-		close(s.errChan)
 	}()
 }
 
