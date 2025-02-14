@@ -1,3 +1,5 @@
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
@@ -7,14 +9,14 @@ CREATE TABLE products (
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
-    password TEXT NOT NULL -- должен быть захеширован
+    password TEXT NOT NULL
 );
 
 CREATE TABLE accounts (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
     balance INT NOT NULL DEFAULT 1000,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CHECK (balance >= 0)
 );
 
@@ -39,8 +41,8 @@ CREATE TABLE transfer_operations (
     amount INT NOT NULL,
     FOREIGN KEY (operation_id) REFERENCES operations(id) ON DELETE CASCADE,
     FOREIGN KEY (sender_account_id) REFERENCES accounts(id) ON DELETE CASCADE,
-    FOREIGN KEY (recipient_account_id) REFERENCES accounts(id) ON DELETE CASCADE
-    CHECK (sender_account_id <> recipient_account_id)
+    FOREIGN KEY (recipient_account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    CHECK (sender_account_id <> recipient_account_id),
     CHECK (amount > 0)
 );
 
@@ -58,8 +60,27 @@ CREATE TABLE purchase_operations (
     CHECK (quantity > 0)
 );
 
--- CREATE INDEX idx_operations_account_id ON operations (account_id);
+INSERT INTO products (name, price)
+VALUES
+  ('t-shirt', 80),
+  ('cup', 20),
+  ('book', 50),
+  ('pen', 10),
+  ('powerbank', 200),
+  ('hoody', 300),
+  ('umbrella', 200),
+  ('socks', 10),
+  ('wallet', 50),
+  ('pink-hoody', 500);
+-- +goose StatementEnd
 
--- CREATE INDEX idx_operations_user_id ON operations (user_id);
-
--- CREATE INDEX idx_operations_operation_type ON operations (operation_type);
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE IF EXISTS purchase_operations CASCADE;
+DROP TABLE IF EXISTS transfer_operations CASCADE;
+DROP TABLE IF EXISTS operations CASCADE;
+DROP TABLE IF EXISTS accounts CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TYPE IF EXISTS operation_type CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+-- +goose StatementEnd

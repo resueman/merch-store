@@ -46,7 +46,7 @@ type Client interface {
 }
 
 type RetryAdatapter interface {
-	WithRetry(f func() error, shouldRetry func(error) bool) error
+	WithRetry(f func() error) error
 }
 
 type TxManager interface {

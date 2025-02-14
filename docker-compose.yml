@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  postgres_db:
+    image: postgres:17
+    container_name: merch_store_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: merch_store
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user", "-d", "merch_store"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+      timeout: 2s
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  default_migrate:
+    build:
+      context: .
+      dockerfile: migrations/Dockerfile
+    container_name: merch_store_migrator
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    restart: on-failure
+    environment:
+      POSTGRES_HOST: postgres_db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: merch_store
+    volumes:
+      - ./migrations:/migrations
+    #command: ["/migrate.sh"]
+
+  app:
+    build: .
+    container_name: merch_store_server
+    restart: always
+    depends_on:
+      - postgres_db
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/merch_store?sslmode=disable
+      PORT: 8080
+    ports:
+      - "8080:8080"
+
+volumes:
+  pg_data:
