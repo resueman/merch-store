@@ -61,11 +61,11 @@ func (m *TxManager) WithRetry(f func() error) error {
 			pgErr.Code == "40P01" || pgErr.Code == "55P03") {
 			continue
 		} else {
-			return err
+			return fmt.Errorf("error inside transaction: %w", err)
 		}
 	}
 
-	return errors.New("error executing transaction: retries exceeded")
+	return ErrTxRetriesExceeded
 }
 
 func (m *TxManager) transaction(
