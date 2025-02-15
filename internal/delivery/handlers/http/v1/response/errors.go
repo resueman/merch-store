@@ -21,7 +21,8 @@ const (
 
 	ErrUnknownMessage = "internal server error"
 
-	ErrBindingMessage = "invalid request body"
+	ErrInvalidClaimsMessage = "invalid claims"
+	ErrBindingMessage       = "invalid request body"
 )
 
 //nolint:errorlint
@@ -51,7 +52,6 @@ func getReturnHTTPCodeAndMessage(err error) (int, string) {
 		{apperrors.ErrInvalidToken, ErrInvalidTokenMessage},
 		{apperrors.ErrTokenExpired, ErrTokenExpiredMessage},
 		{apperrors.ErrGenerateToken, ErrGenerateTokenMessage},
-		{apperrors.ErrInvalidClaims, ErrUnknownMessage},
 	}
 
 	for _, e := range unauthorizedErrors {

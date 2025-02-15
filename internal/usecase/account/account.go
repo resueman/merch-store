@@ -3,11 +3,9 @@ package account
 import (
 	"context"
 
-	"github.com/resueman/merch-store/internal/delivery/ctxkey"
 	"github.com/resueman/merch-store/internal/entity"
 	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/repo"
-	"github.com/resueman/merch-store/internal/usecase/apperrors"
 	"github.com/resueman/merch-store/internal/usecase/converter"
 	"github.com/resueman/merch-store/pkg/db"
 )
@@ -29,12 +27,7 @@ func NewAccountUsecase(account repo.Account, operation repo.Operation,
 	}
 }
 
-func (u *accountUsecase) GetInfo(ctx context.Context) (*model.AccountInfo, error) {
-	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
-	if !ok {
-		return nil, apperrors.ErrInvalidClaims
-	}
-
+func (u *accountUsecase) GetInfo(ctx context.Context, claims model.Claims) (*model.AccountInfo, error) {
 	accountID, err := u.accountRepo.GetIDByUserID(ctx, claims.UserID)
 	if err != nil {
 		return nil, err

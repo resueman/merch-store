@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/resueman/merch-store/internal/delivery/ctxkey"
 	"github.com/resueman/merch-store/internal/entity"
 	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/repo"
@@ -33,12 +32,7 @@ func NewOperationUsecase(account repo.Account, operation repo.Operation, product
 // 1. Товар с заданным именем существует
 // 2. Покупатель существует (уже проверено в middleware?)
 // 3. Кол-во монет достаточно для покупки товара (проверяется в бд, надо вернуть соответствующую ошибку)
-func (u *operationUsecase) BuyItem(ctx context.Context, itemName string) error {
-	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
-	if !ok {
-		return apperrors.ErrInvalidClaims
-	}
-
+func (u *operationUsecase) BuyItem(ctx context.Context, claims model.Claims, itemName string) error {
 	customerAccountID, err := u.accountRepo.GetIDByUserID(ctx, claims.UserID)
 	if err != nil {
 		return err
@@ -97,14 +91,14 @@ func (u *operationUsecase) BuyItem(ctx context.Context, itemName string) error {
 // 3. Получатель существует
 // 4. Отправитель существует (уже проверено в middleware?)
 // 5. Кол-во монет достаточно для перевода (проверяется в бд, надо вернуть соответствующую ошибку)
-func (u *operationUsecase) SendCoin(ctx context.Context, receiverUsername string, amount int) error {
+func (u *operationUsecase) SendCoin(
+	ctx context.Context,
+	claims model.Claims,
+	receiverUsername string,
+	amount int,
+) error {
 	if amount <= 0 {
 		return apperrors.ErrInvalidAmount
-	}
-
-	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
-	if !ok {
-		return apperrors.ErrInvalidClaims
 	}
 
 	senderAccountID, err := u.accountRepo.GetIDByUserID(ctx, claims.UserID)

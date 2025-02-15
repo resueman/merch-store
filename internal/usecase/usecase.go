@@ -18,12 +18,12 @@ type Auth interface {
 }
 
 type Account interface {
-	GetInfo(ctx context.Context) (*model.AccountInfo, error)
+	GetInfo(ctx context.Context, claims model.Claims) (*model.AccountInfo, error)
 }
 
 type Operation interface {
-	BuyItem(ctx context.Context, itemID string) error
-	SendCoin(ctx context.Context, receiverUsername string, amount int) error
+	BuyItem(ctx context.Context, claims model.Claims, itemID string) error
+	SendCoin(ctx context.Context, claims model.Claims, receiverUsername string, amount int) error
 }
 
 type Usecase struct {

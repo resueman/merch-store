@@ -7,7 +7,9 @@ import (
 
 	"github.com/labstack/echo"
 	dto "github.com/resueman/merch-store/internal/api/v1"
+	"github.com/resueman/merch-store/internal/delivery/ctxkey"
 	"github.com/resueman/merch-store/internal/delivery/handlers/http/v1/response"
+	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/usecase"
 )
 
@@ -25,17 +27,23 @@ func newOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.Midd
 }
 
 // (GET /api/buy/{item}): купить предмет за монеты.
-func (h *operationHandler) buyItem(ctx echo.Context) error {
-	item := ctx.Param("item")
+func (h *operationHandler) buyItem(c echo.Context) error {
+	ctx := c.Request().Context()
+	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
+	if !ok {
+		return response.SendHandlerError(c, http.StatusUnauthorized, response.ErrInvalidClaimsMessage)
+	}
+
+	item := c.Param("item")
 	if item == "" {
-		return response.SendHandlerError(ctx, http.StatusBadRequest, "item name is required")
+		return response.SendHandlerError(c, http.StatusBadRequest, "item name is required")
 	}
 
-	if err := h.operationUsecase.BuyItem(ctx.Request().Context(), item); err != nil {
-		return response.SendUsecaseError(ctx, err)
+	if err := h.operationUsecase.BuyItem(ctx, claims, item); err != nil {
+		return response.SendUsecaseError(c, err)
 	}
 
-	return response.SendNoContent(ctx)
+	return response.SendNoContent(c)
 }
 
 func (h *operationHandler) validateSendCoinRequest(input *dto.SendCoinRequest) string {
@@ -52,20 +60,26 @@ func (h *operationHandler) validateSendCoinRequest(input *dto.SendCoinRequest) s
 }
 
 // (POST /api/sendCoin): отправить монеты другому пользователю.
-func (h *operationHandler) sendCoin(ctx echo.Context) error {
+func (h *operationHandler) sendCoin(c echo.Context) error {
+	ctx := c.Request().Context()
+	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
+	if !ok {
+		return response.SendHandlerError(c, http.StatusUnauthorized, response.ErrInvalidClaimsMessage)
+	}
+
 	var input dto.SendCoinRequest
-	if err := ctx.Bind(&input); err != nil {
-		return response.SendHandlerError(ctx, http.StatusBadRequest, response.ErrBindingMessage)
+	if err := c.Bind(&input); err != nil {
+		return response.SendHandlerError(c, http.StatusBadRequest, response.ErrBindingMessage)
 	}
 
 	if errMsg := h.validateSendCoinRequest(&input); errMsg != "" {
-		return response.SendHandlerError(ctx, http.StatusBadRequest, errMsg)
+		return response.SendHandlerError(c, http.StatusBadRequest, errMsg)
 	}
 
-	err := h.operationUsecase.SendCoin(ctx.Request().Context(), input.ToUser, input.Amount)
+	err := h.operationUsecase.SendCoin(ctx, claims, input.ToUser, input.Amount)
 	if err != nil {
-		return response.SendUsecaseError(ctx, err)
+		return response.SendUsecaseError(c, err)
 	}
 
-	return response.SendNoContent(ctx)
+	return response.SendNoContent(c)
 }

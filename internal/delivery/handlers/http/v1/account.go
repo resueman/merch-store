@@ -2,9 +2,13 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo"
+	"github.com/resueman/merch-store/internal/delivery/ctxkey"
 	"github.com/resueman/merch-store/internal/delivery/handlers/http/v1/converter"
 	"github.com/resueman/merch-store/internal/delivery/handlers/http/v1/response"
+	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/usecase"
 )
 
@@ -21,13 +25,19 @@ func newAccountHandler(e *echo.Echo, usecase usecase.Account, m ...echo.Middlewa
 }
 
 // (GET /api/info): получить информацию о монетах, инвентаре и истории транзакций.
-func (h *accountHandler) getInfo(ctx echo.Context) error {
-	info, err := h.accountUsecase.GetInfo(ctx.Request().Context())
+func (h *accountHandler) getInfo(c echo.Context) error {
+	ctx := c.Request().Context()
+	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
+	if !ok {
+		return response.SendHandlerError(c, http.StatusUnauthorized, response.ErrInvalidClaimsMessage)
+	}
+
+	info, err := h.accountUsecase.GetInfo(ctx, claims)
 	if err != nil {
-		return response.SendUsecaseError(ctx, err)
+		return response.SendUsecaseError(c, err)
 	}
 
 	dto := converter.ConvertAccountInfoToInfoResponse(info)
 
-	return response.SendOk(ctx, dto)
+	return response.SendOk(c, dto)
 }
