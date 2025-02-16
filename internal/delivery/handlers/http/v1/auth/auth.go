@@ -1,5 +1,5 @@
 //nolint:wrapcheck
-package v1
+package auth
 
 import (
 	"net/http"
@@ -16,7 +16,7 @@ type authHandler struct {
 	authService usecase.Auth
 }
 
-func newAuthHandler(e *echo.Echo, authService usecase.Auth) *authHandler {
+func NewAuthHandler(e *echo.Echo, authService usecase.Auth) *authHandler {
 	h := &authHandler{authService: authService}
 
 	e.POST("/api/auth", h.auth)

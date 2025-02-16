@@ -1,5 +1,5 @@
 //nolint:wrapcheck
-package v1
+package account
 
 import (
 	"net/http"
@@ -16,7 +16,7 @@ type accountHandler struct {
 	accountUsecase usecase.Account
 }
 
-func newAccountHandler(e *echo.Echo, usecase usecase.Account, m ...echo.MiddlewareFunc) *accountHandler {
+func NewAccountHandler(e *echo.Echo, usecase usecase.Account, m ...echo.MiddlewareFunc) *accountHandler {
 	h := &accountHandler{accountUsecase: usecase}
 
 	e.GET("api/info", h.getInfo, m...)

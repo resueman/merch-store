@@ -1,5 +1,5 @@
 //nolint:wrapcheck
-package v1
+package operation
 
 import (
 	"net/http"
@@ -17,7 +17,7 @@ type operationHandler struct {
 	operationUsecase usecase.Operation
 }
 
-func newOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.MiddlewareFunc) *operationHandler {
+func NewOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.MiddlewareFunc) *operationHandler {
 	h := &operationHandler{operationUsecase: usecase}
 
 	e.GET("api/buy/:item", h.buyItem, m...)
@@ -29,7 +29,12 @@ func newOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.Midd
 // (GET /api/buy/{item}): купить предмет за монеты.
 func (h *operationHandler) buyItem(c echo.Context) error {
 	ctx := c.Request().Context()
-	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
+	claimsValue := ctx.Value(ctxkey.ClaimsKey)
+	if claimsValue == nil {
+		return response.SendHandlerError(c, http.StatusUnauthorized, response.ErrInvalidClaimsMessage)
+	}
+
+	claims, ok := claimsValue.(model.Claims)
 	if !ok {
 		return response.SendHandlerError(c, http.StatusUnauthorized, response.ErrInvalidClaimsMessage)
 	}
@@ -62,7 +67,12 @@ func (h *operationHandler) validateSendCoinRequest(input *dto.SendCoinRequest) s
 // (POST /api/sendCoin): отправить монеты другому пользователю.
 func (h *operationHandler) sendCoin(c echo.Context) error {
 	ctx := c.Request().Context()
-	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
+	claimsValue := ctx.Value(ctxkey.ClaimsKey)
+	if claimsValue == nil {
+		return response.SendHandlerError(c, http.StatusUnauthorized, response.ErrInvalidClaimsMessage)
+	}
+
+	claims, ok := claimsValue.(model.Claims)
 	if !ok {
 		return response.SendHandlerError(c, http.StatusUnauthorized, response.ErrInvalidClaimsMessage)
 	}
