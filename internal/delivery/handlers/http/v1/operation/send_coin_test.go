@@ -31,7 +31,7 @@ func TestSendCoin_Success(t *testing.T) {
 	ctx := context.WithValue(c.Request().Context(), ctxkey.ClaimsKey, claims)
 	c.SetRequest(c.Request().WithContext(ctx))
 
-	err := handler.sendCoin(c)
+	err := handler.SendCoin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 }
@@ -44,7 +44,7 @@ func TestSendCoin_ErrorUnauthorized(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	err := handler.sendCoin(c)
+	err := handler.SendCoin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }
@@ -63,7 +63,7 @@ func TestSendCoin_ErrorBadRequestNoToUser(t *testing.T) {
 	ctx := context.WithValue(c.Request().Context(), ctxkey.ClaimsKey, claims)
 	c.SetRequest(c.Request().WithContext(ctx))
 
-	err := handler.sendCoin(c)
+	err := handler.SendCoin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
@@ -82,7 +82,7 @@ func TestSendCoin_ErrorBadRequestIncorrectAmount(t *testing.T) {
 	ctx := context.WithValue(c.Request().Context(), ctxkey.ClaimsKey, claims)
 	c.SetRequest(c.Request().WithContext(ctx))
 
-	err := handler.sendCoin(c)
+	err := handler.SendCoin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
@@ -107,7 +107,7 @@ func TestSendCoin_BadClaims(t *testing.T) {
 	ctx := context.WithValue(c.Request().Context(), ctxkey.ClaimsKey, claims)
 	c.SetRequest(c.Request().WithContext(ctx))
 
-	err := handler.sendCoin(c)
+	err := handler.SendCoin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }
@@ -126,7 +126,7 @@ func TestSendCoin_ErrorBinding(t *testing.T) {
 	ctx := context.WithValue(c.Request().Context(), ctxkey.ClaimsKey, claims)
 	c.SetRequest(c.Request().WithContext(ctx))
 
-	err := handler.sendCoin(c)
+	err := handler.SendCoin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
@@ -147,7 +147,7 @@ func TestSendCoin_ErrorUsecase(t *testing.T) {
 	ctx := context.WithValue(c.Request().Context(), ctxkey.ClaimsKey, claims)
 	c.SetRequest(c.Request().WithContext(ctx))
 
-	err := handler.sendCoin(c)
+	err := handler.SendCoin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 }

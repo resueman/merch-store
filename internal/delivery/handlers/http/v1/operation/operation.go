@@ -20,14 +20,14 @@ type operationHandler struct {
 func NewOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.MiddlewareFunc) *operationHandler {
 	h := &operationHandler{operationUsecase: usecase}
 
-	e.GET("api/buy/:item", h.buyItem, m...)
-	e.POST("api/sendCoin", h.sendCoin, m...)
+	e.GET("api/buy/:item", h.BuyItem, m...)
+	e.POST("api/sendCoin", h.SendCoin, m...)
 
 	return h
 }
 
 // (GET /api/buy/{item}): купить предмет за монеты.
-func (h *operationHandler) buyItem(c echo.Context) error {
+func (h *operationHandler) BuyItem(c echo.Context) error {
 	ctx := c.Request().Context()
 	claimsValue := ctx.Value(ctxkey.ClaimsKey)
 	if claimsValue == nil {
@@ -65,7 +65,7 @@ func (h *operationHandler) validateSendCoinRequest(input *dto.SendCoinRequest) s
 }
 
 // (POST /api/sendCoin): отправить монеты другому пользователю.
-func (h *operationHandler) sendCoin(c echo.Context) error {
+func (h *operationHandler) SendCoin(c echo.Context) error {
 	ctx := c.Request().Context()
 	claimsValue := ctx.Value(ctxkey.ClaimsKey)
 	if claimsValue == nil {
