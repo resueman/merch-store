@@ -13,12 +13,12 @@ import (
 	"github.com/resueman/merch-store/internal/usecase"
 )
 
-type operationHandler struct {
+type OperationHandler struct {
 	operationUsecase usecase.Operation
 }
 
-func NewOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.MiddlewareFunc) *operationHandler {
-	h := &operationHandler{operationUsecase: usecase}
+func NewOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.MiddlewareFunc) *OperationHandler {
+	h := &OperationHandler{operationUsecase: usecase}
 
 	e.GET("api/buy/:item", h.BuyItem, m...)
 	e.POST("api/sendCoin", h.SendCoin, m...)
@@ -27,7 +27,7 @@ func NewOperationHandler(e *echo.Echo, usecase usecase.Operation, m ...echo.Midd
 }
 
 // (GET /api/buy/{item}): купить предмет за монеты.
-func (h *operationHandler) BuyItem(c echo.Context) error {
+func (h *OperationHandler) BuyItem(c echo.Context) error {
 	ctx := c.Request().Context()
 	claimsValue := ctx.Value(ctxkey.ClaimsKey)
 	if claimsValue == nil {
@@ -51,7 +51,7 @@ func (h *operationHandler) BuyItem(c echo.Context) error {
 	return response.SendNoContent(c)
 }
 
-func (h *operationHandler) validateSendCoinRequest(input *dto.SendCoinRequest) string {
+func (h *OperationHandler) validateSendCoinRequest(input *dto.SendCoinRequest) string {
 	var errMsg strings.Builder
 	if input.Amount <= 0 {
 		errMsg.WriteString("amount must be positive;")
@@ -65,7 +65,7 @@ func (h *operationHandler) validateSendCoinRequest(input *dto.SendCoinRequest) s
 }
 
 // (POST /api/sendCoin): отправить монеты другому пользователю.
-func (h *operationHandler) SendCoin(c echo.Context) error {
+func (h *OperationHandler) SendCoin(c echo.Context) error {
 	ctx := c.Request().Context()
 	claimsValue := ctx.Value(ctxkey.ClaimsKey)
 	if claimsValue == nil {

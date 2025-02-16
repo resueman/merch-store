@@ -12,19 +12,19 @@ import (
 	"github.com/resueman/merch-store/internal/usecase"
 )
 
-type authHandler struct {
+type AuthHandler struct {
 	authService usecase.Auth
 }
 
-func NewAuthHandler(e *echo.Echo, authService usecase.Auth) *authHandler {
-	h := &authHandler{authService: authService}
+func NewAuthHandler(e *echo.Echo, authService usecase.Auth) *AuthHandler {
+	h := &AuthHandler{authService: authService}
 
 	e.POST("/api/auth", h.Auth)
 
 	return h
 }
 
-func (h *authHandler) validateAuthRequest(input *dto.AuthRequest) string {
+func (h *AuthHandler) validateAuthRequest(input *dto.AuthRequest) string {
 	var errMsg strings.Builder
 	if input.Username == "" {
 		errMsg.WriteString("username is required;")
@@ -39,7 +39,7 @@ func (h *authHandler) validateAuthRequest(input *dto.AuthRequest) string {
 
 // (POST /api/auth): аутентификация и получение JWT-токена.
 // При первой аутентификации пользователь создается автоматически.
-func (h *authHandler) Auth(ctx echo.Context) error {
+func (h *AuthHandler) Auth(ctx echo.Context) error {
 	var input dto.AuthRequest
 	if err := ctx.Bind(&input); err != nil {
 		return response.SendHandlerError(ctx, http.StatusBadRequest, response.ErrBindingMessage)
