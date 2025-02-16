@@ -12,12 +12,12 @@ import (
 	"github.com/resueman/merch-store/internal/usecase"
 )
 
-type accountHandler struct {
+type AccountHandler struct {
 	accountUsecase usecase.Account
 }
 
-func NewAccountHandler(e *echo.Echo, usecase usecase.Account, m ...echo.MiddlewareFunc) *accountHandler {
-	h := &accountHandler{accountUsecase: usecase}
+func NewAccountHandler(e *echo.Echo, usecase usecase.Account, m ...echo.MiddlewareFunc) *AccountHandler {
+	h := &AccountHandler{accountUsecase: usecase}
 
 	e.GET("api/info", h.getInfo, m...)
 
@@ -25,7 +25,7 @@ func NewAccountHandler(e *echo.Echo, usecase usecase.Account, m ...echo.Middlewa
 }
 
 // (GET /api/info): получить информацию о монетах, инвентаре и истории транзакций.
-func (h *accountHandler) getInfo(c echo.Context) error {
+func (h *AccountHandler) getInfo(c echo.Context) error {
 	ctx := c.Request().Context()
 	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
 	if !ok {
