@@ -78,21 +78,4 @@ func TestGetInfo(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	})
-
-	/*t.Run("error getting info", func(t *testing.T) {
-		claims := model.Claims{UserID: 123}
-		mockUsecase.On("GetInfo", mock.Anything, claims).Return(&model.AccountInfo{}, errors.New("some error"))
-
-		req := httptest.NewRequest(http.MethodGet, "/api/info", nil)
-		req.Header.Set("Authorization", "Bearer token")
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-
-		ctx := context.WithValue(c.Request().Context(), ctxkey.ClaimsKey, claims)
-		c.SetRequest(c.Request().WithContext(ctx))
-
-		err := handler.getInfo(c)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	})*/
 }
