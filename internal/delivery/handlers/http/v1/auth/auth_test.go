@@ -43,7 +43,7 @@ func TestAuth(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		if assert.NoError(t, handler.auth(ctx)) {
+		if assert.NoError(t, handler.Auth(ctx)) {
 			assert.Equal(t, http.StatusOK, rec.Code)
 			assert.Contains(t, rec.Body.String(), "token")
 		}
@@ -55,7 +55,7 @@ func TestAuth(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		if assert.NoError(t, handler.auth(ctx)) {
+		if assert.NoError(t, handler.Auth(ctx)) {
 			assert.Equal(t, http.StatusBadRequest, rec.Code)
 			assert.Contains(t, rec.Body.String(), "username is required;")
 		}
@@ -67,7 +67,7 @@ func TestAuth(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		if assert.NoError(t, handler.auth(ctx)) {
+		if assert.NoError(t, handler.Auth(ctx)) {
 			assert.Equal(t, http.StatusBadRequest, rec.Code)
 			assert.Contains(t, rec.Body.String(), "password is required;")
 		}
@@ -79,7 +79,7 @@ func TestAuth(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		if assert.NoError(t, handler.auth(ctx)) {
+		if assert.NoError(t, handler.Auth(ctx)) {
 			assert.Equal(t, http.StatusBadRequest, rec.Code)
 			assert.Contains(t, rec.Body.String(), response.ErrBindingMessage)
 		}

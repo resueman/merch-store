@@ -19,7 +19,7 @@ type authHandler struct {
 func NewAuthHandler(e *echo.Echo, authService usecase.Auth) *authHandler {
 	h := &authHandler{authService: authService}
 
-	e.POST("/api/auth", h.auth)
+	e.POST("/api/auth", h.Auth)
 
 	return h
 }
@@ -39,7 +39,7 @@ func (h *authHandler) validateAuthRequest(input *dto.AuthRequest) string {
 
 // (POST /api/auth): аутентификация и получение JWT-токена.
 // При первой аутентификации пользователь создается автоматически.
-func (h *authHandler) auth(ctx echo.Context) error {
+func (h *authHandler) Auth(ctx echo.Context) error {
 	var input dto.AuthRequest
 	if err := ctx.Bind(&input); err != nil {
 		return response.SendHandlerError(ctx, http.StatusBadRequest, response.ErrBindingMessage)
