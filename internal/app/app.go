@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
 	"github.com/resueman/merch-store/pkg/httpserver"
 )
@@ -31,7 +32,8 @@ func (a *App) Run() {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	httpServer := httpserver.New(a.provider.Handler(ctx), a.provider.Config().HTTPServer.Port)
+	e := echo.New()
+	httpServer := httpserver.New(a.provider.Handler(ctx, e), a.provider.Config().HTTPServer.Port)
 	a.provider.Closer().Add(func() error {
 		log.Info("stopping http server gracefully...")
 

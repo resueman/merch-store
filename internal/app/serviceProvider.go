@@ -136,9 +136,9 @@ func (p *serviceProvider) AuthMiddleware(ctx context.Context) *middleware.AuthMi
 	return p.authMiddleware
 }
 
-func (p *serviceProvider) Handler(ctx context.Context) *echo.Echo {
+func (p *serviceProvider) Handler(ctx context.Context, e *echo.Echo) *echo.Echo {
 	if p.handler == nil {
-		p.handler = echo.New()
+		p.handler = e
 		v1.NewRouter(p.handler, p.Usecases(ctx), p.AuthMiddleware(ctx))
 	}
 
