@@ -17,7 +17,7 @@ type App struct {
 
 func NewApp(configPath string, stopSignals ...os.Signal) *App {
 	app := &App{
-		provider: newServiceProvider(configPath, stopSignals...),
+		provider: NewServiceProvider(configPath, stopSignals...),
 	}
 
 	return app

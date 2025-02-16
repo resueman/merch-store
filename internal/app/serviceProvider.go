@@ -35,7 +35,7 @@ type serviceProvider struct {
 	//logger       *log.Logger
 }
 
-func newServiceProvider(configPath string, stopSignals ...os.Signal) *serviceProvider {
+func NewServiceProvider(configPath string, stopSignals ...os.Signal) *serviceProvider {
 	return &serviceProvider{
 		configPath:  configPath,
 		stopSignals: stopSignals,
