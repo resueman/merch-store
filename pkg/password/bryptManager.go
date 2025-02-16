@@ -4,6 +4,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type PasswordManager interface {
+	HashPassword(password string) string
+	ComparePassword(password, hash string) bool
+}
+
 type BcryptManager struct {
 	salt string
 }

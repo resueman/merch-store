@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -10,6 +9,7 @@ import (
 	"github.com/resueman/merch-store/internal/entity"
 	"github.com/resueman/merch-store/internal/model"
 	"github.com/resueman/merch-store/internal/repo"
+	"github.com/resueman/merch-store/internal/repo/repoerrors"
 	"github.com/resueman/merch-store/internal/usecase/apperrors"
 )
 
@@ -52,7 +52,7 @@ func (u *authUsecase) GenerateToken(ctx context.Context, input model.AuthRequest
 		return u.generateToken(model.Claims{UserID: user.ID})
 	}
 
-	if !errors.Is(err, apperrors.ErrUserNotFound) {
+	if !errors.Is(err, repoerrors.ErrNotFound) {
 		return "", err
 	}
 
@@ -98,10 +98,6 @@ func (u *authUsecase) registerUser(ctx context.Context, input model.AuthRequestI
 
 func (u *authUsecase) ParseToken(ctx context.Context, tokenString string) (model.Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected method: %s", token.Header["alg"])
-		}
-
 		return []byte(u.secretKey), nil
 	})
 

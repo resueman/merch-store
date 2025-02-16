@@ -8,7 +8,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/resueman/merch-store/internal/entity"
-	"github.com/resueman/merch-store/internal/usecase/apperrors"
+	"github.com/resueman/merch-store/internal/repo/repoerrors"
 	"github.com/resueman/merch-store/pkg/db"
 )
 
@@ -42,7 +42,7 @@ func (r *UserRepo) GetUserByUsername(ctx context.Context, username string) (*ent
 	var user entity.User
 	if err := row.Scan(&user.ID, &user.Username, &user.Hash); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, apperrors.ErrUserNotFound
+			return nil, repoerrors.ErrNotFound
 		}
 
 		return nil, err
