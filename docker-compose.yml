@@ -69,10 +69,7 @@ services:
       - pg_test_data:/var/lib/postgresql/data
     profiles:
       - test
-   # dns:
-   #   - 8.8.8.8
-   #   - 8.8.4.4
-
+      
   test_migrate:
     build:
       context: .
@@ -90,14 +87,7 @@ services:
     restart: on-failure
     profiles:
       - test
-    # dns:
-    #   - 8.8.8.8
-    #   - 8.8.4.4
 
 volumes:
   pg_data:
   pg_test_data:
-
-# networks:
-#   default:
-#     driver: bridge
