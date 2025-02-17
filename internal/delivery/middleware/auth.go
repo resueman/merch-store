@@ -43,11 +43,6 @@ func (m *AuthMiddleware) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 		}
 
 		SetContext(ctx, claims)
-		//ctx.Set(string(ctxkey.ClaimsKey), claims)
-		//claims, ok := ctx.Request().Context().Value(ctxkey.ClaimsKey).(model.Claims)
-		//if !ok {
-		//	log.Error("Lost claims")
-		//}
 
 		return next(ctx)
 	}
