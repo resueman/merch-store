@@ -59,7 +59,7 @@ func TestGetInfo(t *testing.T) {
 		ctx := context.WithValue(c.Request().Context(), ctxkey.ClaimsKey, claims)
 		c.SetRequest(c.Request().WithContext(ctx))
 
-		err := handler.getInfo(c)
+		err := handler.GetInfo(c)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 
@@ -74,7 +74,7 @@ func TestGetInfo(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		err := handler.getInfo(c)
+		err := handler.GetInfo(c)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	})

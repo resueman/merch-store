@@ -17,6 +17,8 @@ services:
       timeout: 2s
     volumes:
       - pg_data:/var/lib/postgresql/data
+    profiles:
+      - development
 
   default_migrate:
     env_file:
@@ -31,6 +33,8 @@ services:
     restart: on-failure
     volumes:
       - ./migrations:/migrations
+    profiles:
+      - development
 
   app:
     env_file:
@@ -42,6 +46,58 @@ services:
       - postgres_db
     ports:
       - "${HTTP_SERVER_PORT}:${HTTP_SERVER_PORT}"
+    profiles:
+      - development
+
+  test_db:
+    image: postgres:17
+    container_name: test_db
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: store
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user", "-d", "store"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+      timeout: 2s
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_test_data:/var/lib/postgresql/data
+    profiles:
+      - test
+   # dns:
+   #   - 8.8.8.8
+   #   - 8.8.4.4
+
+  test_migrate:
+    build:
+      context: .
+      dockerfile: test/integration/migrations/Dockerfile
+    container_name: test_db_migrator
+    environment:
+      POSTGRES_HOST: test_db
+      POSTGRES_USER: user
+      POSTGRES_PORT: 5432
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: store    
+    depends_on:
+      test_db:
+        condition: service_healthy
+    restart: on-failure
+    profiles:
+      - test
+    # dns:
+    #   - 8.8.8.8
+    #   - 8.8.4.4
 
 volumes:
   pg_data:
+  pg_test_data:
+
+# networks:
+#   default:
+#     driver: bridge

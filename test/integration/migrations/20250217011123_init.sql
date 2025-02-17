@@ -1,3 +1,5 @@
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
@@ -13,8 +15,8 @@ CREATE TABLE users (
 CREATE TABLE accounts (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
-    balance INT NOT NULL DEFAULT 1000,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    balance INT NOT NULL DEFAULT 190,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CHECK (balance >= 0)
 );
 
@@ -39,8 +41,8 @@ CREATE TABLE transfer_operations (
     amount INT NOT NULL,
     FOREIGN KEY (operation_id) REFERENCES operations(id) ON DELETE CASCADE,
     FOREIGN KEY (sender_account_id) REFERENCES accounts(id) ON DELETE CASCADE,
-    FOREIGN KEY (recipient_account_id) REFERENCES accounts(id) ON DELETE CASCADE
-    CHECK (sender_account_id <> recipient_account_id)
+    FOREIGN KEY (recipient_account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    CHECK (sender_account_id <> recipient_account_id),
     CHECK (amount > 0)
 );
 
@@ -70,4 +72,15 @@ VALUES
   ('socks', 10),
   ('wallet', 50),
   ('pink-hoody', 500);
+-- +goose StatementEnd
 
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE IF EXISTS purchase_operations CASCADE;
+DROP TABLE IF EXISTS transfer_operations CASCADE;
+DROP TABLE IF EXISTS operations CASCADE;
+DROP TABLE IF EXISTS accounts CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TYPE IF EXISTS operation_type CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+-- +goose StatementEnd

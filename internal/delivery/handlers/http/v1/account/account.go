@@ -19,15 +19,20 @@ type AccountHandler struct {
 func NewAccountHandler(e *echo.Echo, usecase usecase.Account, m ...echo.MiddlewareFunc) *AccountHandler {
 	h := &AccountHandler{accountUsecase: usecase}
 
-	e.GET("api/info", h.getInfo, m...)
+	e.GET("api/info", h.GetInfo, m...)
 
 	return h
 }
 
 // (GET /api/info): получить информацию о монетах, инвентаре и истории транзакций.
-func (h *AccountHandler) getInfo(c echo.Context) error {
+func (h *AccountHandler) GetInfo(c echo.Context) error {
 	ctx := c.Request().Context()
-	claims, ok := ctx.Value(ctxkey.ClaimsKey).(model.Claims)
+	claimsValue := ctx.Value(ctxkey.ClaimsKey)
+	if claimsValue == nil {
+		return response.SendHandlerError(c, http.StatusUnauthorized, response.ErrInvalidClaimsMessage)
+	}
+
+	claims, ok := claimsValue.(model.Claims)
 	if !ok {
 		return response.SendHandlerError(c, http.StatusUnauthorized, response.ErrInvalidClaimsMessage)
 	}
